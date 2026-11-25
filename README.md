@@ -12,8 +12,8 @@ Flee through a moonlit twilight forest while pursued by the living **Shadow Ink 
 
 ## Feature Showcase
 
-### 1. Live Atmospheric Title Screen
-Opens directly into the animated twilight forest with a crescent moon, volumetric moonbeams, drifting fireflies, soft rainfall, swaying ferns, the Red Fox breathing on mossy ground, and the creeping violet Shadow Ink Tide on the horizon.
+### 1. Live Atmospheric Title Screen & Quick Settings
+Opens directly into the animated twilight forest with a crescent moon, volumetric moonbeams, drifting fireflies, soft rainfall, swaying ferns, the Red Fox breathing on mossy ground, and the creeping violet Shadow Ink Tide on the horizon — with direct **PLAY** and **SETTINGS** controls plus live **Difficulty & Run Speed** status.
 
 ![Title Screen](docs/screenshots/01_title_screen.png)
 
@@ -47,15 +47,15 @@ Morph into a bronze-keratin Armored Pangolin with overlapping plated scales, mol
 
 ![Armored Pangolin Stride](docs/screenshots/07_pangolin_armored_stride.png)
 
-### 8. Pangolin Meteor Slam & Volcanic Armored Roll
-Dive with `S` / `Down` to curl into a spinning bronze-scale sphere that sears glowing molten-amber fracture cracks into the mossy earth, showers sparks on impact, and smashes straight through brambles and cracked monoliths.
+### 8. Pangolin Meteor Slam & Realistic Shingled Armored Roll
+Dive with `S` / `Down` to curl into a tightly shingled, overlapping bronze-keratin armored ball with an organic coiled tail spiral and curved wind slipstreams — smashing straight through brambles and cracked monoliths while searing glowing fractures into the mossy earth.
 
 ![Pangolin Meteor Slam and Armored Roll](docs/screenshots/08_pangolin_meteor_roll.png)
 
-### 9. Pause Menu & Live Natural Soundscape Mixer
-Press `P` or `Esc` at any time to open the translucent Pause Modal and adjust **Master Volume**, **Natural Forest Ambience**, and **Shapeshift & Wildlife SFX** in real time, or restart / return to the title screen.
+### 9. Settings & Pause Menu — Difficulty Modes, Run Speed & Audio Mixer
+Open **SETTINGS** from the Title Screen or press `P` / `Esc` mid-run to switch between **Easy**, **Normal**, and **Hard** difficulty modes, fine-tune your **Run Speed (`0.60x` – `1.60x`)**, and balance **Master Volume**, **Natural Forest Ambience**, and **Shapeshift & Wildlife SFX** in real time.
 
-![Pause Menu and Audio Mixer](docs/screenshots/09_pause_audio_mixer.png)
+![Settings and Pause Menu](docs/screenshots/09_pause_audio_mixer.png)
 
 ### 10. Shadow Ink Tide Chase, Obstacles & Dynamic HUD
 Outrun the smoky violet Shadow Ink Tide as distance, score, and Flow climb through procedural terrain chunks featuring weathered mossy cliffs, glowing runestones, and dynamic form-reactive HUD indicators.
@@ -71,6 +71,14 @@ Instead of harsh static or white noise, `procedural_audio.gd` synthesizes a calm
 - **Warm Forest Pad**: Soft pentatonic twilight chords that breathe gently in the background.
 - **Natural Woodland Life**: Periodic dew water droplets, distant hollow owl-flute calls, and soft summer crickets.
 - **Tactile Gameplay SFX**: Distinct musical chimes and natural acoustic cues for Fox leaps & dashes, Moth silky wing flutters, Pangolin rock-smashing impacts, form shifts, and rising Flow milestones.
+
+---
+
+## Difficulty Modes, Run Speed & Pure Godot 4 Optimization
+
+- **Difficulty Modes (`Easy` / `Normal` / `Hard`)**: Adjusts base pace, Shadow Ink Tide pursuit aggression, stumble recovery grace, and score multiplier (`0.85x` / `1.00x` / `1.35x`).
+- **Custom Run Speed (`0.60x` – `1.60x`)**: Smoothly dial your preferred pace from Relaxed (`0.60x`) to Turbo (`1.60x`) inside Settings — persisted automatically alongside your chosen difficulty and high scores in `user://highscore.cfg`.
+- **100% Pure Godot 4 Performance**: Pre-baked terrain geology polygons, viewport frustum culling, batched `draw_multiline()` grass & rain passes, zero-GC Structure-of-Arrays (SoA) VFX/audio pools, bulk `AudioStreamGeneratorPlayback.push_buffer()`, and branch-guarded GLSL shaders for silky-smooth 60 FPS gameplay.
 
 ---
 
@@ -109,6 +117,7 @@ You can also click any of the three form cards in the bottom-left HUD to shift d
 ```text
 .
 ├── project.godot                     # Godot 4 project config (1280x720 keep stretch, HDR 2D, input map)
+├── LICENSE                           # MIT License
 ├── README.md                         # Documentation & live feature gallery
 ├── docs/
 │   ├── .gdignore                     # Keeps documentation images out of Godot asset imports
@@ -146,6 +155,12 @@ You can also click any of the three form cards in the bottom-left HUD to shift d
     ├── ink_tide.gdshader             # Flowing watercolor Shadow Ink Tide edge shader
     └── post_atmosphere.gdshader      # Subtle Flow speed lines & morph rim pulse
 ```
+
+---
+
+## License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
