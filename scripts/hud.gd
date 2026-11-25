@@ -2,14 +2,15 @@ extends CanvasLayer
 class_name GameHUD
 
 ## Minimalist Translucent In-Game HUD, Custom Vector 3-Form Totem Widget,
-## Translucent Pause Menu with Live Master/Ambience/SFX Sliders, and Game Over Card.
-## Proportioned cleanly for 1280x720 canvas_items vector scaling across all displays.
+## Unified Settings & Pause Modal (Easy / Normal / Hard + Run Speed Slider + Natural Audio Mixer),
+## and Cinematic Game Over Card.
 
 signal resume_pressed
 signal restart_pressed
 signal title_pressed
 signal form_clicked(form_id: int)
 signal volumes_changed(master_v: float, amb_v: float, sfx_v: float)
+signal gameplay_settings_changed(difficulty_mode: int, run_speed_scale: float)
 
 const COL_FOX: Color = Color(0.36, 1.0, 0.74, 1.0)
 const COL_MOTH: Color = Color(0.14, 0.92, 1.0, 1.0)
@@ -21,6 +22,7 @@ var _gameover_panel: Control
 var _totem_canvas: Control
 
 var _lbl_best: Label
+var _lbl_mode_badge: Label
 var _lbl_tide_warn: Label
 var _lbl_dist: Label
 var _lbl_score: Label
@@ -30,10 +32,23 @@ var _lbl_ability: Label
 var _lbl_go_stats: Label
 var _flow_fill_sb: StyleBoxFlat
 
+var _lbl_modal_title: Label
+var _btn_resume: Button
+var _btn_restart: Button
+var _btn_title: Button
+
+var _diff_buttons: Array[Button] = []
+var _diff_active_sbs: Array[StyleBoxFlat] = []
+var _diff_inactive_sb: StyleBoxFlat
+var _lbl_speed_val: Label
+var _sl_speed: HSlider
+
 var _sl_master: HSlider
 var _sl_amb: HSlider
 var _sl_sfx: HSlider
 
+var _selected_diff: int = 1
+var _selected_speed: float = 1.0
 var _active_form: int = 0
 var _ability_ratio: float = 1.0
 var _form_buttons: Array[Button] = []
@@ -45,16 +60,34 @@ func _ready() -> void:
 	_build_ui()
 	set_phase("title")
 
-func set_phase(phase: String) -> void:
-	_hud_root.visible = phase == "playing" or phase == "paused"
-	_pause_panel.visible = phase == "paused"
-	_gameover_panel.visible = phase == "gameover"
+func sync_gameplay_settings(difficulty_mode: int, run_speed_scale: float) -> void:
+	_selected_diff = clampi(difficulty_mode, 0, 2)
+	_selected_speed = clampf(run_speed_scale, 0.60, 1.60)
+	if _sl_speed != null:
+		_sl_speed.set_value_no_signal(_selected_speed)
+	_refresh_settings_ui()
 
-func update_hud(dist: int, best_dist: int, score: int, flow: int, flow_charge: float, active_form: int, tide_danger: float, ability_ratio: float = 1.0, ability_text: String = "PHANTOM DASH READY") -> void:
+func set_phase(phase: String) -> void:
+	var is_title_settings: bool = phase == "settings"
+	_hud_root.visible = phase == "playing" or phase == "paused"
+	_pause_panel.visible = phase == "paused" or is_title_settings
+	_gameover_panel.visible = phase == "gameover"
+	if _lbl_modal_title != null:
+		_lbl_modal_title.text = "GAME SETTINGS" if is_title_settings else "PAUSED & SETTINGS"
+	if _btn_resume != null:
+		_btn_resume.text = "DONE" if is_title_settings else "RESUME  [P]"
+	if _btn_restart != null:
+		_btn_restart.visible = not is_title_settings
+	if _btn_title != null:
+		_btn_title.visible = not is_title_settings
+
+func update_hud(dist: int, best_dist: int, score: int, flow: int, flow_charge: float, active_form: int, tide_danger: float, ability_ratio: float = 1.0, ability_text: String = "PHANTOM DASH READY", mode_badge: String = "") -> void:
 	_active_form = clampi(active_form, 0, 2)
 	_ability_ratio = clampf(ability_ratio, 0.0, 1.0)
 
 	_lbl_best.text = "BEST  %04d m" % maxi(best_dist, dist)
+	if mode_badge != "" and _lbl_mode_badge != null:
+		_lbl_mode_badge.text = mode_badge
 	_lbl_tide_warn.visible = tide_danger > 0.50
 	_lbl_dist.text = "%04d m" % dist
 	_lbl_score.text = "SCORE  %d" % score
@@ -81,13 +114,47 @@ func update_hud(dist: int, best_dist: int, score: int, flow: int, flow_charge: f
 	if _totem_canvas != null:
 		_totem_canvas.queue_redraw()
 
-func show_game_over(dist: int, best_dist: int, score: int, smashed: int, max_flow: int, is_new: bool, cause: String) -> void:
+func show_game_over(dist: int, best_dist: int, score: int, smashed: int, max_flow: int, is_new: bool, cause: String, mode_label: String = "NORMAL") -> void:
 	var rec_tag: String = "   ★ NEW RECORD" if is_new else ""
-	_lbl_go_stats.text = "%s\n\nDistance: %d m%s   ·   Best: %d m\nScore: %d   ·   Shattered: %d   ·   Peak Flow: x%d\n\nPress SPACE or R for instant restart" % [cause, dist, rec_tag, best_dist, score, smashed, max_flow]
+	_lbl_go_stats.text = "%s\n\nMode: %s  (%.2fx Speed)\nDistance: %d m%s   ·   Best: %d m\nScore: %d   ·   Shattered: %d   ·   Peak Flow: x%d\n\nPress SPACE or R for instant restart" % [cause, mode_label, _selected_speed, dist, rec_tag, best_dist, score, smashed, max_flow]
 	set_phase("gameover")
 
 func _on_form_button_pressed(idx: int) -> void:
 	form_clicked.emit(idx)
+
+func _on_diff_button_pressed(idx: int) -> void:
+	_selected_diff = clampi(idx, 0, 2)
+	_refresh_settings_ui()
+	gameplay_settings_changed.emit(_selected_diff, _selected_speed)
+
+func _on_speed_slider_changed(val: float) -> void:
+	_selected_speed = clampf(val, 0.60, 1.60)
+	_refresh_settings_ui()
+	gameplay_settings_changed.emit(_selected_diff, _selected_speed)
+
+func _speed_feel_tag(spd: float) -> String:
+	if spd <= 0.72:
+		return "Calm"
+	elif spd <= 0.92:
+		return "Relaxed"
+	elif spd <= 1.08:
+		return "Standard"
+	elif spd <= 1.32:
+		return "Fast"
+	return "Turbo"
+
+func _refresh_settings_ui() -> void:
+	var diff_cols: Array[Color] = [COL_FOX, COL_MOTH, COL_PANGOLIN]
+	for i in range(_diff_buttons.size()):
+		var b: Button = _diff_buttons[i]
+		var is_act: bool = i == _selected_diff
+		var sb: StyleBoxFlat = _diff_active_sbs[i] if is_act else _diff_inactive_sb
+		b.add_theme_stylebox_override("normal", sb)
+		b.add_theme_stylebox_override("hover", sb)
+		b.add_theme_color_override("font_color", Color(0.02, 0.08, 0.10) if is_act else Color(0.80, 0.88, 0.95))
+	if _lbl_speed_val != null:
+		_lbl_speed_val.text = "Run Speed:  %.2fx  (%s)" % [_selected_speed, _speed_feel_tag(_selected_speed)]
+		_lbl_speed_val.add_theme_color_override("font_color", diff_cols[_selected_diff])
 
 func _on_resume_pressed() -> void:
 	resume_pressed.emit()
@@ -114,9 +181,9 @@ func _draw_totem_icons() -> void:
 
 		if is_act:
 			_totem_canvas.draw_circle(Vector2(cx, cy), 20.0, Color(col.r, col.g, col.b, 0.16))
-			_totem_canvas.draw_arc(Vector2(cx, cy), 17.5, -PI * 0.5, -PI * 0.5 + TAU * _ability_ratio, 26, col, 2.5, true)
+			_totem_canvas.draw_arc(Vector2(cx, cy), 17.5, -PI * 0.5, -PI * 0.5 + TAU * _ability_ratio, 24, col, 2.5, true)
 		else:
-			_totem_canvas.draw_arc(Vector2(cx, cy), 16.0, 0.0, TAU, 22, Color(0.45, 0.56, 0.68, 0.32), 1.4, true)
+			_totem_canvas.draw_arc(Vector2(cx, cy), 16.0, 0.0, TAU, 20, Color(0.45, 0.56, 0.68, 0.32), 1.4, true)
 
 		if i == 0:
 			var fox_poly: PackedVector2Array = PackedVector2Array([
@@ -173,8 +240,8 @@ func _build_ui() -> void:
 	add_child(_hud_root)
 
 	var top_left: VBoxContainer = VBoxContainer.new()
-	top_left.position = Vector2(28, 22)
-	top_left.add_theme_constant_override("separation", 5)
+	top_left.position = Vector2(28, 20)
+	top_left.add_theme_constant_override("separation", 3)
 	_hud_root.add_child(top_left)
 
 	_lbl_best = Label.new()
@@ -183,6 +250,14 @@ func _build_ui() -> void:
 	_lbl_best.add_theme_color_override("font_outline_color", Color(0.015, 0.03, 0.07, 0.92))
 	_lbl_best.add_theme_constant_override("outline_size", 4)
 	top_left.add_child(_lbl_best)
+
+	_lbl_mode_badge = Label.new()
+	_lbl_mode_badge.text = "NORMAL  ·  1.00x"
+	_lbl_mode_badge.add_theme_font_size_override("font_size", 12)
+	_lbl_mode_badge.add_theme_color_override("font_color", Color(0.74, 0.88, 0.98, 0.92))
+	_lbl_mode_badge.add_theme_color_override("font_outline_color", Color(0.015, 0.03, 0.07, 0.90))
+	_lbl_mode_badge.add_theme_constant_override("outline_size", 3)
+	top_left.add_child(_lbl_mode_badge)
 
 	_lbl_tide_warn = Label.new()
 	_lbl_tide_warn.text = "SHADOW INK TIDE CLOSING IN"
@@ -238,7 +313,6 @@ func _build_ui() -> void:
 	_flow_bar.add_theme_stylebox_override("fill", _flow_fill_sb)
 	top_right.add_child(_flow_bar)
 
-	# Bottom-Left Translucent 3-Form Totem Widget + Vector Creature Icons + Ability Status
 	var form_stack: VBoxContainer = VBoxContainer.new()
 	form_stack.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	form_stack.offset_left = 28.0
@@ -283,10 +357,10 @@ func _build_ui() -> void:
 	form_stack.add_child(_lbl_ability)
 
 	var quick_hint: Label = Label.new()
-	quick_hint.text = "[M] Mute   ·   [P] Pause   ·   [R] Restart"
+	quick_hint.text = "[M] Mute   ·   [P] Settings & Pause   ·   [R] Restart"
 	quick_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	quick_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	quick_hint.offset_left = -330.0
+	quick_hint.offset_left = -380.0
 	quick_hint.offset_top = -46.0
 	quick_hint.offset_right = -28.0
 	quick_hint.offset_bottom = -22.0
@@ -297,64 +371,116 @@ func _build_ui() -> void:
 	_hud_root.add_child(quick_hint)
 
 	# ---------------------------------------------------------
-	# TRANSLUCENT PAUSE MODAL WITH LIVE NATURAL AUDIO MIXER
+	# UNIFIED TRANSLUCENT PAUSE & SETTINGS MODAL
+	# (Difficulty Easy/Normal/Hard + Run Speed Slider + Audio Mixer)
 	# ---------------------------------------------------------
 	_pause_panel = ColorRect.new()
-	_pause_panel.color = Color(0.015, 0.028, 0.065, 0.70)
+	_pause_panel.color = Color(0.015, 0.028, 0.065, 0.72)
 	_pause_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_pause_panel)
 
 	var pcard: PanelContainer = PanelContainer.new()
 	pcard.set_anchors_preset(Control.PRESET_CENTER)
-	pcard.offset_left = -195.0
-	pcard.offset_top = -188.0
-	pcard.offset_right = 195.0
-	pcard.offset_bottom = 188.0
-	pcard.add_theme_stylebox_override("panel", _make_box(Color(0.04, 0.075, 0.135, 0.96), Color(0.36, 0.96, 0.74, 0.60), 10, 2))
+	pcard.offset_left = -225.0
+	pcard.offset_top = -255.0
+	pcard.offset_right = 225.0
+	pcard.offset_bottom = 255.0
+	pcard.add_theme_stylebox_override("panel", _make_box(Color(0.04, 0.075, 0.135, 0.96), Color(0.36, 0.96, 0.74, 0.62), 10, 2))
 	_pause_panel.add_child(pcard)
 
 	var pbox: VBoxContainer = VBoxContainer.new()
-	pbox.add_theme_constant_override("separation", 11)
+	pbox.add_theme_constant_override("separation", 9)
 	pcard.add_child(pbox)
 
-	var plbl: Label = Label.new()
-	plbl.text = "PAUSED"
-	plbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	plbl.add_theme_font_size_override("font_size", 28)
-	plbl.add_theme_color_override("font_color", Color(0.95, 0.98, 1.0))
-	pbox.add_child(plbl)
+	_lbl_modal_title = Label.new()
+	_lbl_modal_title.text = "PAUSED & SETTINGS"
+	_lbl_modal_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_lbl_modal_title.add_theme_font_size_override("font_size", 24)
+	_lbl_modal_title.add_theme_color_override("font_color", Color(0.95, 0.98, 1.0))
+	pbox.add_child(_lbl_modal_title)
 
+	# Difficulty Mode Selector (EASY / NORMAL / HARD)
+	var diff_hdr: Label = Label.new()
+	diff_hdr.text = "Difficulty Mode"
+	diff_hdr.add_theme_font_size_override("font_size", 13)
+	diff_hdr.add_theme_color_override("font_color", Color(0.84, 0.92, 0.98))
+	pbox.add_child(diff_hdr)
+
+	var diff_row: HBoxContainer = HBoxContainer.new()
+	diff_row.add_theme_constant_override("separation", 8)
+	pbox.add_child(diff_row)
+
+	_diff_inactive_sb = _make_box(Color(0.07, 0.12, 0.20, 0.90), Color(0.42, 0.56, 0.70, 0.50), 6, 1)
+	_diff_active_sbs = [
+		_make_box(COL_FOX, Color(0.84, 1.0, 0.94), 6, 2),
+		_make_box(COL_MOTH, Color(0.82, 0.98, 1.0), 6, 2),
+		_make_box(COL_PANGOLIN, Color(1.0, 0.92, 0.72), 6, 2)
+	]
+	var diff_names: Array[String] = ["EASY", "NORMAL", "HARD"]
+	for i in range(3):
+		var db: Button = Button.new()
+		db.text = diff_names[i]
+		db.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		db.custom_minimum_size = Vector2(0, 32)
+		db.add_theme_font_size_override("font_size", 13)
+		db.focus_mode = Control.FOCUS_NONE
+		db.pressed.connect(_on_diff_button_pressed.bind(i))
+		diff_row.add_child(db)
+		_diff_buttons.append(db)
+
+	# Run Speed Control Slider (0.60x .. 1.60x)
+	var spd_box: VBoxContainer = VBoxContainer.new()
+	spd_box.add_theme_constant_override("separation", 2)
+	pbox.add_child(spd_box)
+
+	_lbl_speed_val = Label.new()
+	_lbl_speed_val.text = "Run Speed:  1.00x  (Standard)"
+	_lbl_speed_val.add_theme_font_size_override("font_size", 13)
+	spd_box.add_child(_lbl_speed_val)
+
+	_sl_speed = HSlider.new()
+	_sl_speed.min_value = 0.60
+	_sl_speed.max_value = 1.60
+	_sl_speed.step = 0.05
+	_sl_speed.value = 1.00
+	_sl_speed.focus_mode = Control.FOCUS_NONE
+	_sl_speed.value_changed.connect(_on_speed_slider_changed)
+	spd_box.add_child(_sl_speed)
+
+	# Audio Mixer Sliders
 	_sl_master = _add_slider_row(pbox, "Master Volume", 0.85)
 	_sl_amb = _add_slider_row(pbox, "Natural Forest Ambience", 0.78)
 	_sl_sfx = _add_slider_row(pbox, "Shapeshift & Wildlife SFX", 0.88)
 
-	var b_res: Button = Button.new()
-	b_res.text = "RESUME  [P]"
-	b_res.custom_minimum_size = Vector2(0, 38)
-	b_res.add_theme_font_size_override("font_size", 16)
-	b_res.focus_mode = Control.FOCUS_NONE
-	b_res.add_theme_stylebox_override("normal", _make_box(COL_FOX, Color(0.84, 1.0, 0.94), 6, 1))
-	b_res.add_theme_color_override("font_color", Color(0.02, 0.08, 0.10))
-	b_res.pressed.connect(_on_resume_pressed)
-	pbox.add_child(b_res)
+	_btn_resume = Button.new()
+	_btn_resume.text = "RESUME  [P]"
+	_btn_resume.custom_minimum_size = Vector2(0, 36)
+	_btn_resume.add_theme_font_size_override("font_size", 15)
+	_btn_resume.focus_mode = Control.FOCUS_NONE
+	_btn_resume.add_theme_stylebox_override("normal", _make_box(COL_FOX, Color(0.84, 1.0, 0.94), 6, 1))
+	_btn_resume.add_theme_color_override("font_color", Color(0.02, 0.08, 0.10))
+	_btn_resume.pressed.connect(_on_resume_pressed)
+	pbox.add_child(_btn_resume)
 
-	var b_rst: Button = Button.new()
-	b_rst.text = "RESTART RUN  [R]"
-	b_rst.custom_minimum_size = Vector2(0, 34)
-	b_rst.add_theme_font_size_override("font_size", 14)
-	b_rst.focus_mode = Control.FOCUS_NONE
-	b_rst.add_theme_stylebox_override("normal", _make_box(Color(0.08, 0.14, 0.24, 0.94), Color(0.42, 0.56, 0.70, 0.65), 6, 1))
-	b_rst.pressed.connect(_on_restart_pressed)
-	pbox.add_child(b_rst)
+	_btn_restart = Button.new()
+	_btn_restart.text = "RESTART RUN  [R]"
+	_btn_restart.custom_minimum_size = Vector2(0, 32)
+	_btn_restart.add_theme_font_size_override("font_size", 13)
+	_btn_restart.focus_mode = Control.FOCUS_NONE
+	_btn_restart.add_theme_stylebox_override("normal", _make_box(Color(0.08, 0.14, 0.24, 0.94), Color(0.42, 0.56, 0.70, 0.65), 6, 1))
+	_btn_restart.pressed.connect(_on_restart_pressed)
+	pbox.add_child(_btn_restart)
 
-	var b_tit: Button = Button.new()
-	b_tit.text = "RETURN TO TITLE"
-	b_tit.custom_minimum_size = Vector2(0, 34)
-	b_tit.add_theme_font_size_override("font_size", 14)
-	b_tit.focus_mode = Control.FOCUS_NONE
-	b_tit.add_theme_stylebox_override("normal", _make_box(Color(0.08, 0.14, 0.24, 0.94), Color(0.42, 0.56, 0.70, 0.65), 6, 1))
-	b_tit.pressed.connect(_on_title_pressed)
-	pbox.add_child(b_tit)
+	_btn_title = Button.new()
+	_btn_title.text = "RETURN TO TITLE"
+	_btn_title.custom_minimum_size = Vector2(0, 32)
+	_btn_title.add_theme_font_size_override("font_size", 13)
+	_btn_title.focus_mode = Control.FOCUS_NONE
+	_btn_title.add_theme_stylebox_override("normal", _make_box(Color(0.08, 0.14, 0.24, 0.94), Color(0.42, 0.56, 0.70, 0.65), 6, 1))
+	_btn_title.pressed.connect(_on_title_pressed)
+	pbox.add_child(_btn_title)
+
+	_refresh_settings_ui()
 
 	# ---------------------------------------------------------
 	# CINEMATIC GAME OVER SUMMARY MODAL
@@ -367,9 +493,9 @@ func _build_ui() -> void:
 	var gcard: PanelContainer = PanelContainer.new()
 	gcard.set_anchors_preset(Control.PRESET_CENTER)
 	gcard.offset_left = -255.0
-	gcard.offset_top = -142.0
+	gcard.offset_top = -152.0
 	gcard.offset_right = 255.0
-	gcard.offset_bottom = 142.0
+	gcard.offset_bottom = 152.0
 	gcard.add_theme_stylebox_override("panel", _make_box(Color(0.038, 0.068, 0.125, 0.96), Color(0.36, 1.0, 0.74, 0.60), 10, 2))
 	_gameover_panel.add_child(gcard)
 
@@ -402,12 +528,12 @@ func _build_ui() -> void:
 
 func _add_slider_row(parent: VBoxContainer, title: String, init_val: float) -> HSlider:
 	var row: VBoxContainer = VBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
+	row.add_theme_constant_override("separation", 1)
 	parent.add_child(row)
 	var lbl: Label = Label.new()
 	lbl.text = title
-	lbl.add_theme_font_size_override("font_size", 13)
-	lbl.add_theme_color_override("font_color", Color(0.82, 0.90, 0.96))
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", Color(0.80, 0.88, 0.95))
 	row.add_child(lbl)
 	var sl: HSlider = HSlider.new()
 	sl.min_value = 0.0

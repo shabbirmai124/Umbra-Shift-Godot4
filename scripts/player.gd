@@ -74,6 +74,8 @@ var gait_phase: float = 0.0
 var stumble_timer: float = 0.0
 var invuln_timer: float = 0.0
 var momentum_bonus: float = 0.0
+var speed_multiplier: float = 1.0
+var stumble_invuln_duration: float = 0.78
 var alive: bool = true
 
 var _trail_points: Array[Vector2] = []
@@ -134,7 +136,7 @@ func _fire_burst(col: Color, vel_max: float = 240.0, offset_y: float = -20.0) ->
 
 func reset_player() -> void:
 	position = Vector2.ZERO
-	velocity = Vector2(FOX_BASE_SPEED, 0.0)
+	velocity = Vector2(FOX_BASE_SPEED * speed_multiplier, 0.0)
 	current_form = Form.FOX
 	grounded = true
 	jumps_remaining = 2
@@ -204,7 +206,7 @@ func update_showcase(dt: float, flow_multiplier: int, is_dashing_demo: bool, is_
 
 func trigger_stumble() -> void:
 	stumble_timer = 0.52
-	invuln_timer = 0.72
+	invuln_timer = stumble_invuln_duration
 	momentum_bonus = 0.0
 	play_clip("stumble_shake")
 	_fire_burst(Color(0.86, 0.52, 1.0, 0.95), 210.0, -18.0)
@@ -333,19 +335,21 @@ func step_physics(dt: float, difficulty: float, flow_multiplier: int, level_gen:
 				velocity.y = maxf(velocity.y, PANGOLIN_SLAM_SPEED)
 				play_clip("jump_stretch")
 
-	# Target speed & adaptive acceleration
+	# Target speed & adaptive acceleration (scaled by Difficulty Mode & Run Speed setting)
 	var base: float = FOX_BASE_SPEED
 	if current_form == Form.MOTH:
 		base = MOTH_BASE_SPEED
 	elif current_form == Form.PANGOLIN:
 		base = PANGOLIN_BASE_SPEED
-	var target_vx: float = base + difficulty * 175.0 + float(flow_multiplier - 1) * 14.0 + momentum_bonus
+	var scaled_base: float = base * speed_multiplier
+	var scaled_dash: float = FOX_DASH_SPEED * lerpf(1.0, speed_multiplier, 0.55)
+	var target_vx: float = scaled_base + (difficulty * 175.0 + float(flow_multiplier - 1) * 14.0 + momentum_bonus) * speed_multiplier
 	if current_form == Form.FOX and dash_timer > 0.0:
-		target_vx += FOX_DASH_SPEED
+		target_vx += scaled_dash
 	if stumble_timer > 0.0:
 		target_vx *= 0.56
-	var dash_cap_add: float = FOX_DASH_SPEED if dash_timer > 0.0 else 0.0
-	velocity.x = lerpf(velocity.x, minf(base + MAX_BONUS_SPEED + dash_cap_add, target_vx), minf(1.0, 6.8 * dt))
+	var dash_cap_add: float = scaled_dash if dash_timer > 0.0 else 0.0
+	velocity.x = lerpf(velocity.x, minf(scaled_base + MAX_BONUS_SPEED * speed_multiplier + dash_cap_add, target_vx), minf(1.0, 6.8 * dt))
 
 	# Gravity
 	if not grounded:

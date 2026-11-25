@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fox"]
 content_margin_left = 14.0
@@ -96,6 +96,38 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_settings"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.06, 0.12, 0.21, 0.88)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.52, 0.78, 0.92, 0.72)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_settings_hover"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.11, 0.20, 0.34, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.76, 0.94, 1, 0.96)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hint"]
 content_margin_left = 16.0
 content_margin_top = 7.0
@@ -126,9 +158,9 @@ grow_vertical = 2
 [node name="TitleBox" type="VBoxContainer" parent="Root"]
 layout_mode = 0
 offset_left = 76.0
-offset_top = 72.0
-offset_right = 760.0
-offset_bottom = 350.0
+offset_top = 68.0
+offset_right = 790.0
+offset_bottom = 370.0
 theme_override_constants/separation = 12
 
 [node name="BestRecordLabel" type="Label" parent="Root/TitleBox"]
@@ -190,10 +222,13 @@ theme_override_colors/font_color = Color(1, 0.66, 0.14, 1)
 theme_override_font_sizes/font_size = 13
 text = "[3 / L] PANGOLIN · Smash & Slam"
 
-[node name="PlayButton" type="Button" parent="Root/TitleBox"]
-custom_minimum_size = Vector2(210, 50)
+[node name="ActionRow" type="HBoxContainer" parent="Root/TitleBox"]
 layout_mode = 2
-size_flags_horizontal = 0
+theme_override_constants/separation = 12
+
+[node name="PlayButton" type="Button" parent="Root/TitleBox/ActionRow"]
+custom_minimum_size = Vector2(205, 50)
+layout_mode = 2
 focus_mode = 0
 theme_override_colors/font_color = Color(0.02, 0.08, 0.1, 1)
 theme_override_colors/font_hover_color = Color(0.02, 0.08, 0.1, 1)
@@ -203,6 +238,27 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_play")
 theme_override_styles/hover = SubResource("StyleBoxFlat_play_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_play_pressed")
 text = "PLAY"
+
+[node name="SettingsButton" type="Button" parent="Root/TitleBox/ActionRow"]
+custom_minimum_size = Vector2(185, 50)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.92, 0.97, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.84, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_settings")
+theme_override_styles/hover = SubResource("StyleBoxFlat_settings_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_settings")
+text = "SETTINGS"
+
+[node name="ModeStatusLabel" type="Label" parent="Root/TitleBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76, 0.90, 0.98, 0.92)
+theme_override_colors/font_outline_color = Color(0.015, 0.03, 0.08, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 13
+text = "DIFFICULTY: NORMAL   ·   RUN SPEED: 1.00x"
 
 [node name="ControlsBar" type="PanelContainer" parent="Root"]
 layout_mode = 1
@@ -220,4 +276,4 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_hint")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.86, 0.93, 0.98, 0.94)
 theme_override_font_sizes/font_size = 13
-text = "Q / E or Left / Right: Cycle Form   ·   Space / W / Up: Jump or Glide   ·   Shift / Right-Click: Fox Dash   ·   S / Down: Meteor Slam   ·   P: Pause"
+text = "Q / E or Left / Right: Cycle Form   ·   Space / W / Up: Jump or Glide   ·   Shift / Right-Click: Fox Dash   ·   S / Down: Meteor Slam   ·   P: Settings & Pause"

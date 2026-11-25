@@ -49,8 +49,16 @@ var _afterimage_accum: float = 0.0
 var _ambient_fx_accum: float = 0.0
 
 var _lbl_title_best: Label = null
+var _lbl_title_mode: Label = null
+var _title_settings_open: bool = false
+var _sky_mat: ShaderMaterial = null
+var _post_mat: ShaderMaterial = null
 
 func _ready() -> void:
+	if sky_rect != null:
+		_sky_mat = sky_rect.material as ShaderMaterial
+	if post_rect != null:
+		_post_mat = post_rect.material as ShaderMaterial
 	level_gen.reactive_flora = reactive_flora
 	level_gen.reset_world(20261124)
 	player.reset_player()
@@ -64,18 +72,25 @@ func _ready() -> void:
 	player.landed.connect(_on_player_landed)
 	player.paw_stepped.connect(_on_paw_stepped)
 
-	hud.resume_pressed.connect(toggle_pause)
+	hud.resume_pressed.connect(_on_hud_resume_or_done)
 	hud.restart_pressed.connect(start_run)
 	hud.title_pressed.connect(return_to_title)
 	hud.form_clicked.connect(player.request_form)
 	hud.volumes_changed.connect(audio.set_volumes)
+	hud.gameplay_settings_changed.connect(_on_gameplay_settings_changed)
 
 	if title_overlay != null:
-		var play_btn: Button = title_overlay.get_node_or_null("Root/TitleBox/PlayButton") as Button
+		var play_btn: Button = title_overlay.get_node_or_null("Root/TitleBox/ActionRow/PlayButton") as Button
 		if play_btn != null:
 			play_btn.pressed.connect(start_run)
+		var settings_btn: Button = title_overlay.get_node_or_null("Root/TitleBox/ActionRow/SettingsButton") as Button
+		if settings_btn != null:
+			settings_btn.pressed.connect(open_title_settings)
 		_lbl_title_best = title_overlay.get_node_or_null("Root/TitleBox/BestRecordLabel") as Label
+		_lbl_title_mode = title_overlay.get_node_or_null("Root/TitleBox/ModeStatusLabel") as Label
 
+	_apply_gameplay_settings()
+	hud.sync_gameplay_settings(score_mgr.difficulty_mode, score_mgr.run_speed_scale)
 	_sync_title_overlay_visibility(true)
 	_title_cam_x = 0.0
 	player.position = Vector2(280.0, 0.0)
@@ -83,17 +98,48 @@ func _ready() -> void:
 	_sync_world_visuals(0.0, 0.0, 260.0)
 	_update_post_fx(0.0)
 
+func _apply_gameplay_settings() -> void:
+	player.speed_multiplier = score_mgr.get_effective_speed_mult()
+	player.stumble_invuln_duration = score_mgr.get_stumble_invuln()
+	if _lbl_title_mode != null:
+		_lbl_title_mode.text = "DIFFICULTY: %s   ·   RUN SPEED: %.2fx" % [score_mgr.get_mode_name(), score_mgr.run_speed_scale]
+
+func _on_gameplay_settings_changed(diff_mode: int, speed_scale: float) -> void:
+	score_mgr.set_gameplay_settings(diff_mode, speed_scale)
+	_apply_gameplay_settings()
+
+func open_title_settings() -> void:
+	if state != GameState.TITLE:
+		return
+	_title_settings_open = true
+	hud.sync_gameplay_settings(score_mgr.difficulty_mode, score_mgr.run_speed_scale)
+	hud.set_phase("settings")
+
+func close_title_settings() -> void:
+	_title_settings_open = false
+	hud.set_phase("title")
+
+func _on_hud_resume_or_done() -> void:
+	if state == GameState.TITLE and _title_settings_open:
+		close_title_settings()
+	else:
+		toggle_pause()
+
 func _sync_title_overlay_visibility(show_title: bool) -> void:
 	if title_overlay != null:
 		title_overlay.visible = show_title
 	if show_title and _lbl_title_best != null:
 		_lbl_title_best.visible = score_mgr.best_distance > 0
 		_lbl_title_best.text = "PERSONAL BEST  %04d m   ·   %d pts" % [score_mgr.best_distance, score_mgr.best_score]
+	if show_title and _lbl_title_mode != null:
+		_lbl_title_mode.text = "DIFFICULTY: %s   ·   RUN SPEED: %.2fx" % [score_mgr.get_mode_name(), score_mgr.run_speed_scale]
 
 func start_run() -> void:
 	get_tree().paused = false
+	_title_settings_open = false
 	state = GameState.PLAYING
 	score_mgr.reset_run()
+	_apply_gameplay_settings()
 	hitstop_timer = 0.0
 	death_slowmo_timer = 0.0
 	death_cause = ""
@@ -108,7 +154,8 @@ func start_run() -> void:
 
 	_sync_title_overlay_visibility(false)
 	hud.set_phase("playing")
-	hud.update_hud(0, score_mgr.best_distance, 0, score_mgr.flow_multiplier, score_mgr.flow_charge, player.current_form, ink_tide.proximity)
+	var badge: String = "%s  ·  %.2fx" % [score_mgr.get_mode_name(), score_mgr.run_speed_scale]
+	hud.update_hud(0, score_mgr.best_distance, 0, score_mgr.flow_multiplier, score_mgr.flow_charge, player.current_form, ink_tide.proximity, 1.0, "PHANTOM DASH READY", badge)
 	audio.play_morph(PlayerController.Form.FOX)
 
 func toggle_pause() -> void:
@@ -138,9 +185,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_mute"):
 		audio.toggle_mute()
 	elif event.is_action_pressed("game_pause"):
-		if state == GameState.PLAYING or state == GameState.PAUSED:
+		if state == GameState.TITLE and _title_settings_open:
+			close_title_settings()
+		elif state == GameState.TITLE:
+			open_title_settings()
+		elif state == GameState.PLAYING or state == GameState.PAUSED:
 			toggle_pause()
-	elif state == GameState.TITLE and (event.is_action_pressed("action_jump") or event.is_action_pressed("ui_accept")):
+	elif state == GameState.TITLE and not _title_settings_open and (event.is_action_pressed("action_jump") or event.is_action_pressed("ui_accept")):
 		start_run()
 	elif state == GameState.GAME_OVER and (event.is_action_pressed("game_restart") or event.is_action_pressed("action_jump")):
 		start_run()
@@ -190,7 +241,7 @@ func _process(raw_dt: float) -> void:
 		if death_slowmo_timer <= 0.0:
 			state = GameState.GAME_OVER
 			var is_new: bool = score_mgr.save_records()
-			hud.show_game_over(int(score_mgr.distance_m), score_mgr.best_distance, int(score_mgr.score), score_mgr.smashed_count, score_mgr.max_flow, is_new, death_cause)
+			hud.show_game_over(int(score_mgr.distance_m), score_mgr.best_distance, int(score_mgr.score), score_mgr.smashed_count, score_mgr.max_flow, is_new, death_cause, score_mgr.get_mode_name())
 		return
 
 	# Crisp hitstop freeze frame (15ms on morph, 45ms on Pangolin smash/slam)
@@ -209,8 +260,8 @@ func _process(raw_dt: float) -> void:
 	_emit_continuous_fx(dt)
 	reactive_flora.step_flora(dt, level_gen.chunks, player.position, player.velocity.x)
 
-	var ref_pace: float = PlayerController.FOX_BASE_SPEED + difficulty * 165.0
-	ink_tide.update_tide(dt, player.velocity.x, ref_pace, score_mgr.flow_multiplier, true)
+	var ref_pace: float = (PlayerController.FOX_BASE_SPEED + difficulty * 165.0) * score_mgr.get_effective_speed_mult()
+	ink_tide.update_tide(dt, player.velocity.x, ref_pace, score_mgr.flow_multiplier, true, score_mgr.get_tide_aggression())
 
 	if player.position.y > 260.0:
 		_trigger_death("Swallowed by the misty ravine")
@@ -233,7 +284,8 @@ func _process(raw_dt: float) -> void:
 	else:
 		ability_ratio = clampf(0.25 + player.momentum_bonus / 220.0, 0.25, 1.0)
 		ability_label = "METEOR SLAM!" if player.is_slamming else ("ARMORED ROLL · SMASH READY" if player.is_curled else "MAGMA CHARGE")
-	hud.update_hud(int(score_mgr.distance_m), score_mgr.best_distance, int(score_mgr.score), score_mgr.flow_multiplier, score_mgr.flow_charge, player.current_form, ink_tide.proximity, ability_ratio, ability_label)
+	var mode_badge: String = "%s  ·  %.2fx" % [score_mgr.get_mode_name(), score_mgr.run_speed_scale]
+	hud.update_hud(int(score_mgr.distance_m), score_mgr.best_distance, int(score_mgr.score), score_mgr.flow_multiplier, score_mgr.flow_charge, player.current_form, ink_tide.proximity, ability_ratio, ability_label, mode_badge)
 
 	var is_rolling: bool = player.current_form == PlayerController.Form.PANGOLIN and player.grounded and player.is_curled
 	audio.pump_audio(dt, clampf((player.velocity.x - 420.0) / 480.0, 0.0, 1.0), ink_tide.proximity, score_mgr.flow_multiplier, is_rolling, true, player.is_under_tunnel)
@@ -340,11 +392,9 @@ func _emit_continuous_fx(dt: float) -> void:
 			vfx.emit_rain_ripple(Vector2(camera_rig.position.x + randf_range(-520.0, 620.0), 0.0))
 
 func _sync_world_visuals(dt: float, cam_x: float, speed_px: float) -> void:
-	if sky_rect != null:
-		var smat: ShaderMaterial = sky_rect.material as ShaderMaterial
-		if smat != null:
-			smat.set_shader_parameter("scroll_x", cam_x)
-			smat.set_shader_parameter("lightning_flash", _lightning_flash)
+	if _sky_mat != null:
+		_sky_mat.set_shader_parameter("scroll_x", cam_x)
+		_sky_mat.set_shader_parameter("lightning_flash", _lightning_flash)
 	env_mgr.sync_environment(dt, cam_x, speed_px, score_mgr.flow_multiplier, _lightning_flash, player.get_form_color())
 	weather_sys.sync_weather(dt, cam_x, speed_px, player.get_form_color())
 
@@ -418,7 +468,7 @@ func _resolve_obstacles(dt: float) -> void:
 func _apply_stumble(tide_surge: float) -> void:
 	player.trigger_stumble()
 	score_mgr.apply_stumble_penalty()
-	ink_tide.surge_forward(tide_surge)
+	ink_tide.surge_forward(tide_surge, score_mgr.get_tide_aggression())
 	camera_rig.add_trauma(0.45)
 	hitstop_timer = 0.036
 	audio.play_stumble()
@@ -434,18 +484,16 @@ func _update_post_fx(dt: float) -> void:
 	if _shockwave_strength > 0.0:
 		_shockwave_radius += dt * 1.45
 		_shockwave_strength = maxf(0.0, _shockwave_strength - dt * 2.8)
-	if post_rect != null:
-		var mat: ShaderMaterial = post_rect.material as ShaderMaterial
-		if mat != null:
-			var speed_i: float = clampf(float(score_mgr.flow_multiplier - 4) / 6.0, 0.0, 1.0) if state == GameState.PLAYING else 0.0
-			var vig: float = 0.14 + maxf(0.0, ink_tide.proximity - 0.22) * 0.48
-			mat.set_shader_parameter("speed_intensity", speed_i)
-			mat.set_shader_parameter("chromatic_pulse", vfx.chromatic_pulse)
-			mat.set_shader_parameter("vignette_strength", vig)
-			mat.set_shader_parameter("shockwave_radius", _shockwave_radius)
-			mat.set_shader_parameter("shockwave_strength", _shockwave_strength)
-			mat.set_shader_parameter("shockwave_center", _shockwave_center)
-			mat.set_shader_parameter("accent_color", player.get_form_color())
+	if _post_mat != null:
+		var speed_i: float = clampf(float(score_mgr.flow_multiplier - 4) / 6.0, 0.0, 1.0) if state == GameState.PLAYING else 0.0
+		var vig: float = 0.14 + maxf(0.0, ink_tide.proximity - 0.22) * 0.48
+		_post_mat.set_shader_parameter("speed_intensity", speed_i)
+		_post_mat.set_shader_parameter("chromatic_pulse", vfx.chromatic_pulse)
+		_post_mat.set_shader_parameter("vignette_strength", vig)
+		_post_mat.set_shader_parameter("shockwave_radius", _shockwave_radius)
+		_post_mat.set_shader_parameter("shockwave_strength", _shockwave_strength)
+		_post_mat.set_shader_parameter("shockwave_center", _shockwave_center)
+		_post_mat.set_shader_parameter("accent_color", player.get_form_color())
 
 func _on_form_shifted(prev_form: int, new_form: int, pos: Vector2) -> void:
 	hitstop_timer = maxf(hitstop_timer, 0.015)
