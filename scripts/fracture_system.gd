@@ -1,13 +1,9 @@
 extends Node2D
 class_name FractureSystem
 
-## Voronoi-Style Procedural Fracture & Ground Fissure System
-## - Shatters monoliths, crystal walls, and fallen logs into 16 jagged spinning polygon shards
-## - Shards simulate gravity, rotational inertia, ground bounce damping, and cooling magma-amber edges (1.8s)
-## - Stamps glowing cooling magma fissure decals onto the mossy terrain on Meteor Slams and high-speed rolls
-
-const MAX_SHARDS: int = 96
-const MAX_FISSURES: int = 28
+## Voronoi-Style Procedural Fracture Debris & Cooling Ground Fissure Decals
+## Shatters monoliths, crystal walls, and logs into 14-20 jagged spinning polygon shards
+## with gravity, rotational inertia, ground bounce damping, and cooling magma-amber rims.
 
 var _shards: Array[Dictionary] = []
 var _fissures: Array[Dictionary] = []
@@ -17,136 +13,112 @@ func reset_fractures() -> void:
 	_fissures.clear()
 	queue_redraw()
 
-func shatter_obstacle(center: Vector2, ground_y: float, kind: String = "monolith") -> void:
-	var count: int = 18 if kind != "thorn_bramble" else 12
-	var is_crystal: bool = kind == "crystal_wall"
-	var base_fill: Color = Color(0.28, 0.13, 0.04, 0.94) if is_crystal else Color(0.11, 0.125, 0.175, 1.0)
+func shatter_obstacle(center: Vector2, ground_y: float, is_crystal: bool = false) -> void:
+	var count: int = 18
 	for i in range(count):
-		if _shards.size() >= MAX_SHARDS:
-			_shards.pop_front()
-		var sides: int = 4 + (i % 3)
-		var rad: float = randf_range(7.0, 17.0)
-		var pts: PackedVector2Array = PackedVector2Array()
-		for s in range(sides):
-			var ang: float = (float(s) / float(sides)) * TAU + randf_range(-0.28, 0.28)
-			var r_s: float = rad * randf_range(0.62, 1.22)
-			pts.append(Vector2(cos(ang) * r_s, sin(ang) * r_s))
-		var vx: float = randf_range(120.0, 620.0)
-		var vy: float = randf_range(-520.0, -90.0)
+		var ang: float = randf_range(-PI * 0.92, -0.08)
+		var spd: float = randf_range(220.0, 640.0)
+		var sz: float = randf_range(6.5, 16.5)
+		# Jagged Voronoi-like irregular 5-vertex shard polygon
+		var local_poly: PackedVector2Array = PackedVector2Array()
+		for v in range(5):
+			var va: float = (float(v) / 5.0) * TAU + randf_range(-0.22, 0.22)
+			var vr: float = sz * randf_range(0.55, 1.15)
+			local_poly.append(Vector2(cos(va) * vr, sin(va) * vr))
 		_shards.append({
-			"pos": center + Vector2(randf_range(-24.0, 24.0), randf_range(-44.0, 16.0)),
-			"vel": Vector2(vx, vy),
+			"pos": center + Vector2(randf_range(-20.0, 20.0), randf_range(-34.0, 16.0)),
+			"vel": Vector2(cos(ang) * spd + 190.0, sin(ang) * spd - 90.0),
 			"rot": randf_range(0.0, TAU),
 			"rot_v": randf_range(-13.0, 13.0),
-			"pts": pts,
-			"fill": base_fill,
-			"life": 0.0,
-			"max_life": randf_range(1.45, 2.05),
+			"poly": local_poly,
 			"ground_y": ground_y,
-			"bounces": 0
+			"is_crystal": is_crystal,
+			"life": 0.0,
+			"max_life": randf_range(1.4, 2.0)
 		})
-	stamp_ground_fissure(Vector2(center.x, ground_y), 1.25)
+	stamp_ground_fissure(Vector2(center.x, ground_y), 1.15)
 	queue_redraw()
 
-func stamp_ground_fissure(world_pos: Vector2, intensity: float = 1.0) -> void:
-	if _fissures.size() >= MAX_FISSURES:
-		_fissures.pop_front()
-	var w: float = randf_range(38.0, 64.0) * intensity
-	var pts: PackedVector2Array = PackedVector2Array([
-		Vector2(-w * 0.5, 2.0),
-		Vector2(-w * 0.22, -2.5),
-		Vector2(0.0, 3.5),
-		Vector2(w * 0.24, -1.8),
-		Vector2(w * 0.5, 2.0)
-	])
-	var branch: PackedVector2Array = PackedVector2Array([
-		Vector2(0.0, 3.5),
-		Vector2(w * 0.12, 11.0 * intensity),
-		Vector2(w * 0.24, 18.0 * intensity)
-	])
+func stamp_ground_fissure(world_pos: Vector2, scale_v: float = 1.0) -> void:
 	_fissures.append({
 		"pos": world_pos,
-		"pts": pts,
-		"branch": branch,
+		"scale": scale_v,
 		"life": 0.0,
-		"max_life": 2.4,
-		"intensity": intensity
+		"max_life": 2.4
 	})
+	if _fissures.size() > 16:
+		_fissures.pop_front()
+	queue_redraw()
 
-func update_fractures(dt: float) -> void:
+func step_fractures(dt: float) -> void:
+	var dirty: bool = false
 	for i in range(_shards.size() - 1, -1, -1):
-		var sh: Dictionary = _shards[i]
-		var life: float = float(sh["life"]) + dt
-		var ml: float = float(sh["max_life"])
-		if life >= ml:
+		dirty = true
+		var s: Dictionary = _shards[i]
+		var life: float = float(s["life"]) + dt
+		s["life"] = life
+		if life >= float(s["max_life"]):
 			_shards.remove_at(i)
 			continue
-		var vel: Vector2 = sh["vel"]
-		vel.y += 1720.0 * dt
-		var pos: Vector2 = sh["pos"] + vel * dt
-		var gy: float = float(sh["ground_y"])
-		if pos.y > gy - 3.0:
+		var vel: Vector2 = s["vel"]
+		var pos: Vector2 = s["pos"]
+		vel.y += 1480.0 * dt
+		pos += vel * dt
+		var gy: float = float(s["ground_y"])
+		if pos.y > gy - 3.0 and vel.y > 0.0:
 			pos.y = gy - 3.0
-			vel.y = -absf(vel.y) * 0.42
-			vel.x *= 0.74
-			sh["rot_v"] = float(sh["rot_v"]) * 0.72
-			sh["bounces"] = int(sh["bounces"]) + 1
-		sh["pos"] = pos
-		sh["vel"] = vel
-		sh["rot"] = float(sh["rot"]) + float(sh["rot_v"]) * dt
-		sh["life"] = life
+			vel.y *= -0.36
+			vel.x *= 0.72
+			s["rot_v"] = float(s["rot_v"]) * 0.65
+		s["pos"] = pos
+		s["vel"] = vel
+		s["rot"] = float(s["rot"]) + float(s["rot_v"]) * dt
 
 	for i in range(_fissures.size() - 1, -1, -1):
+		dirty = true
 		var f: Dictionary = _fissures[i]
-		var life: float = float(f["life"]) + dt
-		if life >= float(f["max_life"]):
+		var fl: float = float(f["life"]) + dt
+		f["life"] = fl
+		if fl >= float(f["max_life"]):
 			_fissures.remove_at(i)
-		else:
-			f["life"] = life
 
-	if _shards.size() > 0 or _fissures.size() > 0:
+	if dirty:
 		queue_redraw()
 
 func _draw() -> void:
-	# Glowing magma ground fissures cooling smoothly to dark ash
+	# Cooling glowing magma ground fissures
 	for f in _fissures:
-		var prog: float = float(f["life"]) / maxf(0.01, float(f["max_life"]))
-		var heat: float = pow(1.0 - prog, 1.45)
 		var pos: Vector2 = f["pos"]
-		var pts: PackedVector2Array = f["pts"]
-		var branch: PackedVector2Array = f["branch"]
-		var world_pts: PackedVector2Array = PackedVector2Array()
-		for p in pts:
-			world_pts.append(pos + p)
-		var world_br: PackedVector2Array = PackedVector2Array()
-		for bp in branch:
-			world_br.append(pos + bp)
-		var glow_col: Color = Color(1.0, 0.36, 0.0, heat * 0.42)
-		var core_col: Color = Color(1.35, 0.82, 0.16, heat * 0.96).lerp(Color(0.24, 0.12, 0.10, heat * 0.5), prog)
-		draw_polyline(world_pts, glow_col, 7.5, true)
-		draw_polyline(world_pts, core_col, 2.6, true)
-		draw_polyline(world_br, core_col, 1.8, true)
+		var sc: float = float(f["scale"])
+		var ratio: float = clampf(1.0 - float(f["life"]) / float(f["max_life"]), 0.0, 1.0)
+		var heat_col: Color = Color(1.0, 0.56, 0.06, ratio * 0.88).lerp(Color(0.32, 0.14, 0.08, ratio * 0.5), 1.0 - ratio)
+		var core_col: Color = Color(1.0, 0.90, 0.54, ratio * ratio * 0.85)
+		var crack: PackedVector2Array = PackedVector2Array([
+			pos + Vector2(-34.0 * sc, 2.0),
+			pos + Vector2(-14.0 * sc, 6.0),
+			pos + Vector2(2.0 * sc, 2.0),
+			pos + Vector2(18.0 * sc, 7.0),
+			pos + Vector2(36.0 * sc, 2.0)
+		])
+		draw_polyline(crack, Color(1.0, 0.42, 0.02, ratio * 0.32), 7.0, true)
+		draw_polyline(crack, heat_col, 3.0, true)
+		draw_polyline(crack, core_col, 1.2, true)
 
-	# Spinning fractured rock/crystal shards with cooling molten edges (1.8s)
-	for sh in _shards:
-		var prog: float = float(sh["life"]) / maxf(0.01, float(sh["max_life"]))
-		var alpha: float = clampf(1.0 - smoothstep_f(0.70, 1.0, prog), 0.0, 1.0)
-		var cool: float = clampf(1.0 - prog * 1.15, 0.0, 1.0)
-		var pos: Vector2 = sh["pos"]
-		var rot: float = float(sh["rot"])
-		var fill: Color = sh["fill"]
-		fill.a *= alpha
-		var edge_col: Color = Color(1.25, 0.64, 0.08, alpha * cool).lerp(Color(0.26, 0.30, 0.38, alpha * 0.65), 1.0 - cool)
-		var raw_pts: PackedVector2Array = sh["pts"]
-		var xform_pts: PackedVector2Array = PackedVector2Array()
-		for p in raw_pts:
-			xform_pts.append(pos + p.rotated(rot))
-		draw_colored_polygon(xform_pts, fill)
-		if xform_pts.size() >= 3:
-			var closed: PackedVector2Array = xform_pts.duplicate()
-			closed.append(xform_pts[0])
-			draw_polyline(closed, edge_col, 1.8, true)
-
-func smoothstep_f(edge0: float, edge1: float, x: float) -> float:
-	var t: float = clampf((x - edge0) / maxf(0.0001, edge1 - edge0), 0.0, 1.0)
-	return t * t * (3.0 - 2.0 * t)
+	# Spinning Voronoi shards with molten-amber edges cooling to dark basalt ash
+	for s in _shards:
+		var pos: Vector2 = s["pos"]
+		var rot: float = float(s["rot"])
+		var life_t: float = clampf(float(s["life"]) / float(s["max_life"]), 0.0, 1.0)
+		var fade: float = clampf((1.0 - life_t) * 1.4, 0.0, 1.0)
+		var heat: float = clampf(1.0 - life_t * 1.25, 0.0, 1.0)
+		var local_poly: PackedVector2Array = s["poly"]
+		var world_poly: PackedVector2Array = PackedVector2Array()
+		var c: float = cos(rot)
+		var sn: float = sin(rot)
+		for pt in local_poly:
+			world_poly.append(pos + Vector2(pt.x * c - pt.y * sn, pt.x * sn + pt.y * c))
+		var base_col: Color = Color(0.46, 0.24, 0.10, fade) if bool(s["is_crystal"]) else Color(0.20, 0.22, 0.28, fade)
+		draw_colored_polygon(world_poly, base_col)
+		var rim_col: Color = Color(0.32, 0.36, 0.44, fade * 0.5).lerp(Color(1.0, 0.68, 0.12, fade), heat)
+		world_poly.append(world_poly[0])
+		draw_polyline(world_poly, rim_col, 1.8, true)

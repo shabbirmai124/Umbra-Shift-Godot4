@@ -11,16 +11,16 @@ config_version=5
 [application]
 
 config/name="UMBRA SHIFT"
-config/description="100% Procedural 2D Bioluminescent Shapeshifting Endless Runner in Godot 4"
+config/description="UMBRA SHIFT — 100% Procedural 2D Atmospheric Shapeshifting Endless Runner in Godot 4 by Md Shabbir Mia"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
 [display]
 
-window/size/viewport_width=1920
-window/size/viewport_height=1080
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 window/vsync/vsync_mode=1
 
 [input]
@@ -96,6 +96,6 @@ toggle_mute={
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 viewport/hdr_2d=true
-anti_aliasing/quality/msaa_2d=2
+anti_aliasing/quality/msaa_2d=0
 environment/defaults/default_clear_color=Color(0.018, 0.028, 0.072, 1)
 2d/snap/snap_2d_transforms_to_pixel=false

@@ -1,19 +1,76 @@
-# UMBRA SHIFT (Godot 4)
+# UMBRA SHIFT
 
-A 100% procedural, 60 FPS 2D fast-paced shapeshifting endless runner built exclusively in **Godot 4 (GDScript + GLSL CanvasItem Shaders)** with zero external sprites, images, textures, fonts, or audio files.
+**Created by Md Shabbir Mia**
 
-Flee through a rain-drenched, moonlit twilight forest while relentlessly pursued by the living **Shadow Ink Tide**, shifting instantaneously between three anatomically articulated bioluminescent creatures to maintain momentum and build your **Flow Multiplier (`x1` – `x10`)**.
+An atmospheric, locked 60 FPS 2D shapeshifting endless runner built in **Godot 4 (GDScript + GLSL CanvasItem Shaders)** with custom procedural animation, hand-tuned natural wildlife palettes, and a real-time synthesized woodland soundscape — using zero external sprites, textures, fonts, or audio assets.
+
+Flee through a moonlit twilight forest while pursued by the living **Shadow Ink Tide**, shifting seamlessly between a **Red Spirit Fox**, an **Actias Luna Moth**, and an **Armored Pangolin** to overcome terrain, shatter obstacles, and build your **Flow Multiplier (`x1` – `x10`)**.
+
+![UMBRA SHIFT Title Screen](docs/screenshots/01_title_screen.png)
 
 ---
 
-## How to Open & Run in Godot 4
+## Feature Showcase
 
-1. Install **Godot Engine 4.3+** (Standard edition, GDScript).
-2. Open the **Godot Project Manager** and click **Import**.
-3. Select the `project.godot` file in the root of this folder and click **Import & Edit**.
-4. Press **F5** (or click the **Play** button in the top-right corner) to launch `res://scenes/main.tscn`.
+### 1. Live Atmospheric Title Screen
+Opens directly into the animated twilight forest with a crescent moon, volumetric moonbeams, drifting fireflies, soft rainfall, swaying ferns, the Red Fox breathing on mossy ground, and the creeping violet Shadow Ink Tide on the horizon.
 
-> High scores and best distances are saved automatically at runtime to Godot's user data directory (`user://highscore.cfg`).
+![Title Screen](docs/screenshots/01_title_screen.png)
+
+### 2. Red Spirit Fox — Gallop & Forest Sprint
+Natural auburn-orange fur with a cream cheek ruff, black paws, white-tipped Verlet brush tail, articulated digitigrade legs, and spring-damped gait motion across mossy turf and glowing woodland mushrooms.
+
+![Fox Sprint in Twilight Forest](docs/screenshots/02_fox_sprint_forest.png)
+
+### 3. Fox Phantom Dash & Reflective Rain Puddles
+Trigger a rapid horizontal burst (`Shift` or `Right-Click`) that slips cleanly beneath low root overhangs, leaves glowing mint afterimages, splashes across shader-reflected rain puddles, and displays live cooldown status on the HUD.
+
+![Fox Phantom Dash](docs/screenshots/03_fox_phantom_dash.png)
+
+### 4. Responsive Double-Jump & Aerial Flow
+Fluid mid-air leap arcs with coyote time, jump buffering, horizontal tail extension, and glowing jump-burst particles over uneven forest ground and ancient runestones.
+
+![Fox Double Jump](docs/screenshots/04_fox_double_jump.png)
+
+### 5. Actias Luna Moth — Moonlit Aurora Glide
+Instant morph into a celadon-winged Luna Moth featuring plum leading wing edges, golden-amber eyespots, feathery antennae, a trailing cyan flight ribbon, and effortless gliding across cliffs and ravines.
+
+![Luna Moth Aurora Glide](docs/screenshots/05_moth_aurora_glide.png)
+
+### 6. Luna Moth — Wingbeat Flutter & Bioluminescent Spores
+Tap jump in mid-air for crisp wingbeat lift with luminous scale dust, dynamic upstroke wing tilt, and automatic high-altitude camera framing so upcoming terrain stays clearly readable.
+
+![Luna Moth Wingbeat Flutter](docs/screenshots/06_moth_wingbeat_flutter.png)
+
+### 7. Armored Pangolin — Keratin Scales & Heavy Stride
+Morph into a bronze-keratin Armored Pangolin with overlapping plated scales, molten-amber underglow, warm ground illumination, and instant amber theme synchronization across the HUD and flow bar.
+
+![Armored Pangolin Stride](docs/screenshots/07_pangolin_armored_stride.png)
+
+### 8. Pangolin Meteor Slam & Volcanic Armored Roll
+Dive with `S` / `Down` to curl into a spinning bronze-scale sphere that sears glowing molten-amber fracture cracks into the mossy earth, showers sparks on impact, and smashes straight through brambles and cracked monoliths.
+
+![Pangolin Meteor Slam and Armored Roll](docs/screenshots/08_pangolin_meteor_roll.png)
+
+### 9. Pause Menu & Live Natural Soundscape Mixer
+Press `P` or `Esc` at any time to open the translucent Pause Modal and adjust **Master Volume**, **Natural Forest Ambience**, and **Shapeshift & Wildlife SFX** in real time, or restart / return to the title screen.
+
+![Pause Menu and Audio Mixer](docs/screenshots/09_pause_audio_mixer.png)
+
+### 10. Shadow Ink Tide Chase, Obstacles & Dynamic HUD
+Outrun the smoky violet Shadow Ink Tide as distance, score, and Flow climb through procedural terrain chunks featuring weathered mossy cliffs, glowing runestones, and dynamic form-reactive HUD indicators.
+
+![Shadow Ink Tide Chase and HUD](docs/screenshots/10_ink_tide_chase_hud.png)
+
+---
+
+## Natural Woodland Soundscape
+
+Instead of harsh static or white noise, `procedural_audio.gd` synthesizes a calm, organic forest soundscape in real time using Godot's `AudioStreamGenerator`:
+
+- **Warm Forest Pad**: Soft pentatonic twilight chords that breathe gently in the background.
+- **Natural Woodland Life**: Periodic dew water droplets, distant hollow owl-flute calls, and soft summer crickets.
+- **Tactile Gameplay SFX**: Distinct musical chimes and natural acoustic cues for Fox leaps & dashes, Moth silky wing flutters, Pangolin rock-smashing impacts, form shifts, and rising Flow milestones.
 
 ---
 
@@ -21,26 +78,29 @@ Flee through a rain-drenched, moonlit twilight forest while relentlessly pursued
 
 | Action | Keys / Input |
 | :--- | :--- |
-| **Shift to Fox** (Mint `#4FFFB0`) | `1` or `J` |
-| **Shift to Moth** (Cyan `#00E5FF`) | `2` or `K` |
-| **Shift to Pangolin** (Amber `#FF9E00`) | `3` or `L` |
+| **Shift to Fox** | `1` or `J` |
+| **Shift to Luna Moth** | `2` or `K` |
+| **Shift to Armored Pangolin** | `3` or `L` |
 | **Cycle Forms Left / Right** | `Q` / `E` or `Left` / `Right` |
-| **Jump / Double-Jump / Moth Flap & Hold-to-Glide** | `Space`, `W`, or `Up` |
-| **Fox Phantom Dash** (slides under low root tunnels) | `Shift` or `Right-Click` |
-| **Pangolin Meteor Slam / Fast-Fall / Low Dash** | `S` or `Down` |
-| **Pause / Resume** | `P` or `Esc` |
+| **Jump / Double-Jump / Moth Flutter & Hold-to-Glide** | `Space`, `W`, or `Up` |
+| **Fox Phantom Dash** (slides under low overhangs) | `Shift` or `Right-Click` |
+| **Pangolin Meteor Slam / Armored Roll** | `S` or `Down` |
+| **Pause / Audio Mixer** | `P` or `Esc` |
 | **Instant Restart** | `R` |
-| **Mute / Unmute Procedural Audio** | `M` |
+| **Mute / Unmute Audio** | `M` |
 
-You can also click any of the three form badges on the bottom-left HUD to shift forms directly.
+You can also click any of the three form cards in the bottom-left HUD to shift directly.
 
 ---
 
-## The Three Shapeshifting Forms
+## How to Open & Run in Godot 4
 
-- **Bioluminescent Fox (`#4FFFB0` Mint Green)** — Fastest runner with 3-segment digitigrade 4-beat gallop legs, a 10-node Verlet brush tail, responsive double-jump, and a horizontal **Phantom Dash** (with translucent mint afterimages) to slip beneath low root tunnels.
-- **Luminous Moth (`#00E5FF` Electric Cyan)** — Plumed bipectinate antennae, asymmetric falcate forewings, trailing swallowtail hindwings, branching cyan venation, and ocelli eye-spots. Tap to flutter upward, hold to glide softly, and ride glowing cyan **Spore-Drafts** across bottomless ravines.
-- **Armored Pangolin (`#FF9E00`–`#FF4500` Magma Amber)** — Layered weathered-basalt diamond keratin scales with glowing volcanic fissures and 3-clawed digging limbs. Curls into a rotating armored sphere downhill and at speed, ignores brambles, executes heavy **Meteor Ground-Slams**, and shatters cracked monoliths, crystal walls, and fallen logs with 50ms hitstop, flying stone debris, and glowing fracture decals.
+1. Install **Godot Engine 4.3+** (Standard GDScript edition).
+2. Open the **Godot Project Manager** and click **Import**.
+3. Select `project.godot` in the root of this repository and click **Import & Edit**.
+4. Press **F5** (or click **Play**) to launch `res://scenes/main.tscn`.
+
+> Best distance and high scores are saved automatically to `user://highscore.cfg`.
 
 ---
 
@@ -48,30 +108,47 @@ You can also click any of the three form badges on the bottom-left HUD to shift 
 
 ```text
 .
-├── project.godot                  # Godot 4.3 project config, 1280x720 canvas_items expand, full input map
-├── README.md                      # Setup, controls, and architecture guide
+├── project.godot                     # Godot 4 project config (1280x720 keep stretch, HDR 2D, input map)
+├── README.md                         # Documentation & live feature gallery
+├── docs/
+│   ├── .gdignore                     # Keeps documentation images out of Godot asset imports
+│   └── screenshots/                  # 10 live gameplay feature screenshots
 ├── resources/
-│   └── world_env.tres             # WorldEnvironment HDR Glow/Bloom & tonemapping
+│   └── world_env.tres                # WorldEnvironment HDR bloom & tonemapping
 ├── scenes/
-│   ├── main.tscn                  # Root scene (WorldEnvironment, CanvasModulate, 6-layer forest, Player, Camera2D, VFX, Ink Tide, HUD, Audio)
-│   ├── player.tscn                # CharacterBody2D with procedural PointLight2D (GradientTexture2D), Line2D MothRibbon, and 3 creature renderers
-│   └── hud.tscn                   # CanvasLayer hosting Title Screen, minimalist HUD, Pause modal, and Game Over card
+│   ├── main.tscn                     # Root scene (WorldEnvironment, parallax forest, Player, CameraRig, InkTide, HUD, Audio)
+│   ├── player.tscn                   # CharacterBody2D with aura PointLight2D, MothRibbon Line2D, and 3 creature renderers
+│   ├── ink_tide.tscn                 # Shadow Ink Tide shader overlay & drifting shadow embers
+│   ├── hud.tscn                      # Minimalist HUD, Pause Audio Mixer modal, and Game Over summary
+│   └── title_overlay.tscn            # Live animated Title Screen overlay
 ├── scripts/
-│   ├── main.gd                    # State machine, 50ms hitstop, dynamic camera, obstacle collision, Flow multiplier
-│   ├── player.gd                  # 3-form physics, coyote time, jump/morph buffering, momentum conservation
-│   ├── fox_renderer.gd            # Procedural _draw() Bioluminescent Fox anatomy
-│   ├── moth_renderer.gd           # Procedural _draw() Luminous Moth anatomy
-│   ├── pangolin_renderer.gd       # Procedural _draw() Armored Pangolin & curled sphere anatomy
-│   ├── environment_backdrop.gd    # 6-layer parallax forest, wind-swaying canopy polygons, 3-depth diagonal rain
-│   ├── level_generator.gd         # Chunk-based clearable level generator, organic cliffs, shader puddles, reactive bending ferns, waystones
-│   ├── ink_tide.gd                # Shadow Ink Tide proximity/surge controller + writhing procedural tendrils
-│   ├── vfx_manager.gd             # Zero-GC pooled sparks, morph bursts, afterimages, stone debris, ripples & ground decals
-│   ├── procedural_audio.gd        # Pure AudioStreamGenerator synthesizer (rain/wind pink noise, form SFX, heartbeat, Flow arpeggio)
-│   └── hud.gd                     # Responsive procedural UI + ConfigFile (user://highscore.cfg) persistence
+│   ├── main.gd                       # Game state machine, hitstop, collision handling, and score flow
+│   ├── player.gd                     # 3-form physics, coyote time, jump/morph buffering, momentum conservation
+│   ├── fox_renderer.gd               # Procedural Red Spirit Fox anatomy & digitigrade gallop animation
+│   ├── moth_renderer.gd              # Procedural Actias Luna Moth wings, eyespots, antennae & wingbeat animation
+│   ├── pangolin_renderer.gd          # Procedural Armored Pangolin scales, stride & curled volcanic roll
+│   ├── environment_manager.gd        # Multi-layer parallax twilight forest, crescent moon, moonbeams & foliage
+│   ├── weather_system.gd             # Layered diagonal rainfall, fireflies, spores & atmospheric gusts
+│   ├── level_generator.gd            # Procedural clearable terrain chunks, cliffs, rain puddles & runestones
+│   ├── obstacle.gd                   # Smashable monoliths, brambles, overhangs & Spore-Draft updrafts
+│   ├── reactive_flora.gd             # Spring-physics grass blades, glowing mushrooms & bending ferns
+│   ├── fracture_system.gd            # Molten-amber ground fracture cracks & impact shockwaves
+│   ├── camera_rig.gd                 # Look-ahead framing, form-aware zoom & smooth trauma shake
+│   ├── vfx_manager.gd                # Zero-GC pooled sparks, morph rings, afterimages, ripples & debris
+│   ├── ink_tide.gd                   # Living Shadow Ink Tide proximity & surge controller
+│   ├── score_manager.gd              # Distance, Flow multiplier, combo streaks & highscore persistence
+│   ├── procedural_audio.gd           # Pure AudioStreamGenerator natural forest ambience & wildlife SFX
+│   └── hud.gd                        # Vector form badges, Flow bar, Pause audio sliders & Game Over UI
 └── shaders/
-    ├── sky_clouds.gdshader        # Twilight sky gradient, crescent moon halo, FBM storm clouds, sheet lightning
-    ├── tree_sway.gdshader         # Vertex wind-sway displacement for mid-ground forest canopies
-    ├── water_reflect.gdshader     # Rain-rippled puddle reflections synced to player bioluminescence
-    ├── ink_tide.gdshader          # FBM liquid ink wave displacement with glossy moonlight crest sheen
-    └── speed_lines.gdshader       # High-Flow speed streaks & 0.12s morph chromatic rim pulse
+    ├── sky_storm.gdshader            # Twilight aurora sky gradient, stars & drifting clouds
+    ├── wind_sway.gdshader            # Gentle wind sway for distant woodland canopies
+    ├── puddle_reflect.gdshader       # Rippling rainwater puddle reflections
+    ├── ink_tide.gdshader             # Flowing watercolor Shadow Ink Tide edge shader
+    └── post_atmosphere.gdshader      # Subtle Flow speed lines & morph rim pulse
 ```
+
+---
+
+## Author
+
+**Md Shabbir Mia**

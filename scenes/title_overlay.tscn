@@ -1,0 +1,223 @@
+[gd_scene load_steps=8 format=3]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fox"]
+content_margin_left = 14.0
+content_margin_top = 7.0
+content_margin_right = 14.0
+content_margin_bottom = 7.0
+bg_color = Color(0.04, 0.09, 0.16, 0.84)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.36, 1, 0.74, 0.92)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_moth"]
+content_margin_left = 14.0
+content_margin_top = 7.0
+content_margin_right = 14.0
+content_margin_bottom = 7.0
+bg_color = Color(0.04, 0.09, 0.16, 0.84)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.14, 0.92, 1, 0.92)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pangolin"]
+content_margin_left = 14.0
+content_margin_top = 7.0
+content_margin_right = 14.0
+content_margin_bottom = 7.0
+bg_color = Color(0.04, 0.09, 0.16, 0.84)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.66, 0.14, 0.92)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_play"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.36, 1, 0.74, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.84, 1, 0.94, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_play_hover"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.56, 1, 0.84, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_play_pressed"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.24, 0.86, 0.62, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.84, 1, 0.94, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hint"]
+content_margin_left = 16.0
+content_margin_top = 7.0
+content_margin_right = 16.0
+content_margin_bottom = 7.0
+bg_color = Color(0.03, 0.06, 0.12, 0.72)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.66, 0.78, 0.36)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="TitleOverlay" type="CanvasLayer"]
+layer = 11
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleBox" type="VBoxContainer" parent="Root"]
+layout_mode = 0
+offset_left = 76.0
+offset_top = 72.0
+offset_right = 760.0
+offset_bottom = 350.0
+theme_override_constants/separation = 12
+
+[node name="BestRecordLabel" type="Label" parent="Root/TitleBox"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.36, 1, 0.74, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.03, 0.08, 0.92)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 14
+text = "PERSONAL BEST  0000 m"
+
+[node name="TitleLabel" type="Label" parent="Root/TitleBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.99, 1, 1)
+theme_override_colors/font_outline_color = Color(0.02, 0.04, 0.1, 0.95)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 62
+text = "UMBRA SHIFT"
+
+[node name="TaglineLabel" type="Label" parent="Root/TitleBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.84, 0.93, 0.99, 0.96)
+theme_override_colors/font_outline_color = Color(0.015, 0.03, 0.08, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 16
+text = "OUTRUN THE SHADOW INK TIDE  ·  BY MD SHABBIR MIA"
+
+[node name="FormLegendRow" type="HBoxContainer" parent="Root/TitleBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="FoxBadge" type="PanelContainer" parent="Root/TitleBox/FormLegendRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fox")
+
+[node name="Label" type="Label" parent="Root/TitleBox/FormLegendRow/FoxBadge"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.36, 1, 0.74, 1)
+theme_override_font_sizes/font_size = 13
+text = "[1 / J] FOX · Speed & Dash"
+
+[node name="MothBadge" type="PanelContainer" parent="Root/TitleBox/FormLegendRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_moth")
+
+[node name="Label" type="Label" parent="Root/TitleBox/FormLegendRow/MothBadge"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.14, 0.92, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "[2 / K] MOTH · Glide & Drafts"
+
+[node name="PangolinBadge" type="PanelContainer" parent="Root/TitleBox/FormLegendRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pangolin")
+
+[node name="Label" type="Label" parent="Root/TitleBox/FormLegendRow/PangolinBadge"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.66, 0.14, 1)
+theme_override_font_sizes/font_size = 13
+text = "[3 / L] PANGOLIN · Smash & Slam"
+
+[node name="PlayButton" type="Button" parent="Root/TitleBox"]
+custom_minimum_size = Vector2(210, 50)
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+theme_override_colors/font_color = Color(0.02, 0.08, 0.1, 1)
+theme_override_colors/font_hover_color = Color(0.02, 0.08, 0.1, 1)
+theme_override_colors/font_pressed_color = Color(0.02, 0.08, 0.1, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_play")
+theme_override_styles/hover = SubResource("StyleBoxFlat_play_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_play_pressed")
+text = "PLAY"
+
+[node name="ControlsBar" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 76.0
+offset_top = -54.0
+offset_right = 1120.0
+offset_bottom = -20.0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_hint")
+
+[node name="ControlsHint" type="Label" parent="Root/ControlsBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.93, 0.98, 0.94)
+theme_override_font_sizes/font_size = 13
+text = "Q / E or Left / Right: Cycle Form   ·   Space / W / Up: Jump or Glide   ·   Shift / Right-Click: Fox Dash   ·   S / Down: Meteor Slam   ·   P: Pause"

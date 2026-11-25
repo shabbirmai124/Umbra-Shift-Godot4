@@ -36,9 +36,9 @@ const FOX_DASH_COOLDOWN: float = 0.72
 const MOTH_FLUTTER_VEL: float = -380.0
 const MOTH_FLUTTER_COOLDOWN: float = 0.22
 
-const COYOTE_DURATION: float = 0.12
-const JUMP_BUFFER_DURATION: float = 0.12
-const MORPH_BUFFER_DURATION: float = 0.12
+const COYOTE_DURATION: float = 0.13
+const JUMP_BUFFER_DURATION: float = 0.13
+const MORPH_BUFFER_DURATION: float = 0.10
 const MORPH_EFFECT_DURATION: float = 0.14
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -68,6 +68,7 @@ var wing_phase: float = 0.0
 var wing_boost: float = 0.0
 var is_slamming: bool = false
 var is_curled: bool = false
+var is_under_tunnel: bool = false
 var roll_angle: float = 0.0
 var gait_phase: float = 0.0
 var stumble_timer: float = 0.0
@@ -373,6 +374,7 @@ func step_physics(dt: float, difficulty: float, flow_multiplier: int, level_gen:
 		velocity.y = maxf(0.0, velocity.y)
 
 	# Check elevated one-way mossy ledges & tree-branch sanctuaries first
+	is_under_tunnel = level_gen.is_under_root_tunnel(position.x)
 	var plat: Dictionary = level_gen.sample_elevated_platform(position.x, prev_y, position.y, velocity.y)
 	var surface: Dictionary = level_gen.sample_ground(position.x)
 	if current_form == Form.PANGOLIN and grounded and not surface.is_empty():
@@ -396,7 +398,8 @@ func step_physics(dt: float, difficulty: float, flow_multiplier: int, level_gen:
 		jumps_remaining = 2
 	elif not surface.is_empty():
 		var ground_y: float = float(surface.get("y", 0.0))
-		if position.y >= ground_y and (prev_y <= ground_y + 26.0 or grounded):
+		# Includes forgiving 8px ledge corner-correction when barely grazing a landing edge
+		if position.y >= ground_y - 2.0 and (prev_y <= ground_y + 34.0 or grounded):
 			if not grounded and velocity.y > 110.0:
 				landed_now = true
 			position.y = ground_y
@@ -523,7 +526,7 @@ func _update_renderers(dt: float, flow_multiplier: int) -> void:
 	var morph_r: float = morph_anim_timer / MORPH_EFFECT_DURATION if morph_anim_timer > 0.0 else 0.0
 	var speed_r: float = clampf((velocity.x - 480.0) / 360.0, 0.0, 1.0)
 	if anim_player == null or not anim_player.is_playing():
-		aura_light.energy = 1.3 + float(flow_multiplier - 1) * 0.09 + wing_boost * 0.35
+		aura_light.energy = 0.92 + float(flow_multiplier - 1) * 0.06 + wing_boost * 0.24
 
 	if current_form == Form.FOX:
 		fox_renderer.sync_state(gait_phase, dash_timer > 0.0, not grounded, velocity.y, speed_r, flow_multiplier, morph_r, dt)
