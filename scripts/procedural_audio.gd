@@ -10,47 +10,49 @@ class_name ProceduralAudio
 ## - Distinct 3-form shapeshift harmonic whooshes
 ## - Accelerating Shadow Ink Tide sub-bass heartbeat & Flow x3+ rhythmic arpeggio warmth
 
-const SAMPLE_RATE := 22050.0
+const SAMPLE_RATE: float = 22050.0
 
 var _ambience_player: AudioStreamPlayer
 var _ambience_pb: AudioStreamGeneratorPlayback
 var _sfx_player: AudioStreamPlayer
 var _sfx_pb: AudioStreamGeneratorPlayback
 
-var _pink_b0 := 0.0
-var _pink_b1 := 0.0
-var _pink_b2 := 0.0
-var _wind_lp := 0.0
-var _wind_phase := 0.0
-var _rumble_phase := 0.0
-var _heartbeat_phase := 0.0
-var _flow_arp_phase := 0.0
-var _arp_step := 0
-var _muted := false
-var _is_rolling := false
+var _pink_b0: float = 0.0
+var _pink_b1: float = 0.0
+var _pink_b2: float = 0.0
+var _wind_lp: float = 0.0
+var _wind_phase: float = 0.0
+var _rumble_phase: float = 0.0
+var _heartbeat_phase: float = 0.0
+var _flow_arp_phase: float = 0.0
+var _arp_step: int = 0
+var _muted: bool = false
+var _is_rolling: bool = false
 
 var _voices: Array[Dictionary] = []
 
 func _ready() -> void:
 	_ambience_player = AudioStreamPlayer.new()
-	var amb_stream := AudioStreamGenerator.new()
+	var amb_stream: AudioStreamGenerator = AudioStreamGenerator.new()
 	amb_stream.mix_rate = SAMPLE_RATE
 	amb_stream.buffer_length = 0.12
 	_ambience_player.stream = amb_stream
 	_ambience_player.volume_db = -10.0
+	_ambience_player.set("playback_type", 1)
 	add_child(_ambience_player)
 	_ambience_player.play()
-	_ambience_pb = _ambience_player.get_stream_playback()
+	_ambience_pb = _ambience_player.get_stream_playback() as AudioStreamGeneratorPlayback
 
 	_sfx_player = AudioStreamPlayer.new()
-	var sfx_stream := AudioStreamGenerator.new()
+	var sfx_stream: AudioStreamGenerator = AudioStreamGenerator.new()
 	sfx_stream.mix_rate = SAMPLE_RATE
 	sfx_stream.buffer_length = 0.08
 	_sfx_player.stream = sfx_stream
 	_sfx_player.volume_db = -4.0
+	_sfx_player.set("playback_type", 1)
 	add_child(_sfx_player)
 	_sfx_player.play()
-	_sfx_pb = _sfx_player.get_stream_playback()
+	_sfx_pb = _sfx_player.get_stream_playback() as AudioStreamGeneratorPlayback
 
 func set_muted(m: bool) -> void:
 	_muted = m
@@ -63,19 +65,27 @@ func toggle_mute() -> bool:
 
 func play_morph(form_id: int) -> void:
 	# Bright mint for Fox, airy high cyan for Moth, deep resonant amber for Pangolin
-	var freqs: Array = [329.63, 493.88, 659.25] if form_id == 0 else ([392.0, 587.33, 880.0, 987.77] if form_id == 1 else [146.83, 220.0, 293.66])
+	var freqs: Array[float] = [329.63, 493.88, 659.25]
+	if form_id == 1:
+		freqs = [392.0, 587.33, 880.0, 987.77]
+	elif form_id == 2:
+		freqs = [146.83, 220.0, 293.66]
 	for f in freqs:
 		_spawn_voice(f * 0.94, f * 1.04, 0.25, 0.085, false)
-	_spawn_voice(520.0 if form_id != 2 else 220.0, 1450.0 if form_id == 1 else 620.0, 0.14, 0.06, true)
+	var sweep0: float = 520.0 if form_id != 2 else 220.0
+	var sweep1: float = 1450.0 if form_id == 1 else 620.0
+	_spawn_voice(sweep0, sweep1, 0.14, 0.06, true)
 
 func play_paw_step() -> void:
-	var p := randf_range(0.92, 1.08)
+	var p: float = randf_range(0.92, 1.08)
 	_spawn_voice(195.0 * p, 85.0 * p, 0.048, 0.07, false)
 
 func play_jump(form_id: int, is_double: bool) -> void:
-	var mult := 1.25 if is_double else 1.0
-	var f0 := (120.0 if form_id == 2 else 255.0) * mult
-	var f1 := (215.0 if form_id == 2 else 560.0) * mult
+	var mult: float = 1.25 if is_double else 1.0
+	var base0: float = 120.0 if form_id == 2 else 255.0
+	var base1: float = 215.0 if form_id == 2 else 560.0
+	var f0: float = base0 * mult
+	var f1: float = base1 * mult
 	_spawn_voice(f0, f1, 0.13, 0.13, false)
 	if is_double:
 		# Subtle melodic mint chime on Fox double-jump
@@ -85,7 +95,7 @@ func play_dash() -> void:
 	_spawn_voice(700.0, 2400.0, 0.19, 0.16, true)
 
 func play_flutter() -> void:
-	var p := randf_range(0.94, 1.08)
+	var p: float = randf_range(0.94, 1.08)
 	_spawn_voice(470.0 * p, 760.0 * p, 0.12, 0.10, false)
 
 func play_draft_shimmer() -> void:
@@ -120,7 +130,7 @@ func pump_audio(dt: float, speed_ratio: float, tide_proximity: float, flow_mult:
 
 	if is_playing:
 		# Accelerating Shadow Ink Tide danger heartbeat
-		var pulse_rate := 0.85 + tide_proximity * 2.1 + float(flow_mult - 1) * 0.08
+		var pulse_rate: float = 0.85 + tide_proximity * 2.1 + float(flow_mult - 1) * 0.08
 		_heartbeat_phase += dt * pulse_rate
 		if _heartbeat_phase >= 1.0:
 			_heartbeat_phase -= 1.0
@@ -129,12 +139,12 @@ func pump_audio(dt: float, speed_ratio: float, tide_proximity: float, flow_mult:
 
 		# Subtle rhythmic harmonic arpeggio unlocked at Flow x3+
 		if flow_mult >= 3:
-			var arp_rate := 3.2 + float(flow_mult - 3) * 0.45
+			var arp_rate: float = 3.2 + float(flow_mult - 3) * 0.45
 			_flow_arp_phase += dt * arp_rate
 			if _flow_arp_phase >= 1.0:
 				_flow_arp_phase -= 1.0
-				var scale := [293.66, 329.63, 440.0, 493.88, 587.33, 659.25, 880.0]
-				var freq: float = scale[_arp_step % scale.size()]
+				var arp_scale: Array[float] = [293.66, 329.63, 440.0, 493.88, 587.33, 659.25, 880.0]
+				var freq: float = arp_scale[_arp_step % arp_scale.size()]
 				_arp_step += 1
 				_spawn_voice(freq, freq, 0.16, 0.03 + minf(0.04, float(flow_mult - 2) * 0.005), false)
 
@@ -142,46 +152,54 @@ func pump_audio(dt: float, speed_ratio: float, tide_proximity: float, flow_mult:
 	_fill_sfx()
 
 func _fill_ambience(speed_ratio: float) -> void:
+	if _ambience_pb == null and _ambience_player != null and _ambience_player.playing:
+		_ambience_pb = _ambience_player.get_stream_playback() as AudioStreamGeneratorPlayback
 	if _ambience_pb == null:
 		return
-	var frames := _ambience_pb.get_frames_available()
-	var cutoff := clampf(0.04 + speed_ratio * 0.08, 0.04, 0.18)
+	var frames: int = _ambience_pb.get_frames_available()
+	var cutoff: float = clampf(0.04 + speed_ratio * 0.08, 0.04, 0.18)
 	for _i in range(frames):
-		var white := randf_range(-1.0, 1.0)
+		var white: float = randf_range(-1.0, 1.0)
 		_pink_b0 = 0.99765 * _pink_b0 + white * 0.099046
 		_pink_b1 = 0.96300 * _pink_b1 + white * 0.296516
 		_pink_b2 = 0.57000 * _pink_b2 + white * 1.052691
-		var pink := (_pink_b0 + _pink_b1 + _pink_b2 + white * 0.1848) * 0.055
+		var pink: float = (_pink_b0 + _pink_b1 + _pink_b2 + white * 0.1848) * 0.055
 		_wind_lp += (pink - _wind_lp) * cutoff
 		_wind_phase += 0.00018
-		var wind_mod := 0.65 + 0.35 * sin(_wind_phase)
-		var rumble := 0.0
+		var wind_mod: float = 0.65 + 0.35 * sin(_wind_phase)
+		var rumble: float = 0.0
 		if _is_rolling:
 			_rumble_phase += TAU * (52.0 + speed_ratio * 24.0) / SAMPLE_RATE
 			rumble = sin(_rumble_phase) * 0.14
-		var sample := clampf(pink * 0.35 + _wind_lp * 1.15 * wind_mod + rumble, -0.82, 0.82)
+		var sample: float = clampf(pink * 0.35 + _wind_lp * 1.15 * wind_mod + rumble, -0.82, 0.82)
 		_ambience_pb.push_frame(Vector2(sample, sample))
 
 func _fill_sfx() -> void:
+	if _sfx_pb == null and _sfx_player != null and _sfx_player.playing:
+		_sfx_pb = _sfx_player.get_stream_playback() as AudioStreamGeneratorPlayback
 	if _sfx_pb == null:
 		return
-	var frames := _sfx_pb.get_frames_available()
-	var inv_sr := 1.0 / SAMPLE_RATE
+	var frames: int = _sfx_pb.get_frames_available()
+	var inv_sr: float = 1.0 / SAMPLE_RATE
 	for _i in range(frames):
-		var mix := 0.0
+		var mix: float = 0.0
 		for idx in range(_voices.size() - 1, -1, -1):
 			var v: Dictionary = _voices[idx]
-			v["t"] += inv_sr
-			if v["t"] >= v["dur"]:
+			var vt: float = float(v["t"]) + inv_sr
+			var vdur: float = maxf(0.001, float(v["dur"]))
+			v["t"] = vt
+			if vt >= vdur:
 				_voices.remove_at(idx)
 				continue
-			var prog: float = v["t"] / v["dur"]
-			var env := (1.0 - prog) * minf(1.0, prog * 18.0)
-			if v["noise"]:
-				mix += randf_range(-1.0, 1.0) * v["amp"] * env
+			var prog: float = vt / vdur
+			var env: float = (1.0 - prog) * minf(1.0, prog * 18.0)
+			var vamp: float = float(v["amp"])
+			if bool(v["noise"]):
+				mix += randf_range(-1.0, 1.0) * vamp * env
 			else:
-				var freq := lerpf(v["f0"], v["f1"], prog)
-				v["phase"] += TAU * freq * inv_sr
-				mix += sin(v["phase"]) * v["amp"] * env
-		var clamped := clampf(mix, -0.92, 0.92)
+				var freq: float = lerpf(float(v["f0"]), float(v["f1"]), prog)
+				var vphase: float = float(v["phase"]) + TAU * freq * inv_sr
+				v["phase"] = vphase
+				mix += sin(vphase) * vamp * env
+		var clamped: float = clampf(mix, -0.92, 0.92)
 		_sfx_pb.push_frame(Vector2(clamped, clamped))

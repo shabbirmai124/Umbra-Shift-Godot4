@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/fox_renderer.gd" id="2_fox"]
@@ -20,6 +20,30 @@ fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(0.5, 0)
 
+[sub_resource type="Gradient" id="Gradient_orb"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.55, 1, 1, 1, 0)
+offsets = PackedFloat32Array(0, 0.42, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_orb"]
+gradient = SubResource("Gradient_orb")
+width = 24
+height = 24
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
+
+[sub_resource type="Gradient" id="Gradient_trail_fade"]
+colors = PackedColorArray(1, 1, 1, 0.92, 1, 1, 1, 0.55, 1, 1, 1, 0)
+offsets = PackedFloat32Array(0, 0.45, 1)
+
+[sub_resource type="Curve" id="Curve_ribbon"]
+_data = [Vector2(0, 0.06), 0.0, 0.0, 0, 0, Vector2(0.68, 0.78), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Gradient" id="Gradient_ribbon"]
+colors = PackedColorArray(0, 0.9, 1, 0, 0.12, 0.88, 1, 0.48, 0.82, 0.99, 1, 0.86)
+offsets = PackedFloat32Array(0, 0.52, 1)
+
 [node name="Player" type="CharacterBody2D"]
 z_index = 10
 script = ExtResource("1_player")
@@ -30,26 +54,70 @@ shape = SubResource("RectangleShape2D_body")
 
 [node name="MothRibbon" type="Line2D" parent="."]
 z_index = -1
-width = 14.0
-default_color = Color(0, 0.9, 1, 0.72)
+width = 18.0
+width_curve = SubResource("Curve_ribbon")
+gradient = SubResource("Gradient_ribbon")
+default_color = Color(0, 0.9, 1, 0.84)
 begin_cap_mode = 2
 end_cap_mode = 2
 antialiased = true
 
-[node name="FoxRenderer" type="Node2D" parent="."]
+[node name="TrailParticles" type="CPUParticles2D" parent="."]
+z_index = -1
+position = Vector2(-10, -18)
+amount = 28
+lifetime = 0.55
+texture = SubResource("GradientTexture2D_orb")
+emission_shape = 1
+emission_sphere_radius = 12.0
+direction = Vector2(-1, -0.25)
+spread = 32.0
+gravity = Vector2(0, -18)
+initial_velocity_min = 45.0
+initial_velocity_max = 125.0
+scale_amount_min = 0.25
+scale_amount_max = 0.72
+color = Color(0.31, 1, 0.69, 0.85)
+color_ramp = SubResource("Gradient_trail_fade")
+
+[node name="BurstParticles" type="CPUParticles2D" parent="."]
+z_index = 2
+position = Vector2(0, -20)
+emitting = false
+amount = 26
+lifetime = 0.42
+one_shot = true
+explosiveness = 0.92
+texture = SubResource("GradientTexture2D_orb")
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 220)
+initial_velocity_min = 85.0
+initial_velocity_max = 260.0
+scale_amount_min = 0.3
+scale_amount_max = 0.95
+color = Color(0.31, 1, 0.69, 0.95)
+color_ramp = SubResource("Gradient_trail_fade")
+
+[node name="VisualRoot" type="Node2D" parent="."]
+scale = Vector2(1.28, 1.28)
+
+[node name="FoxRenderer" type="Node2D" parent="VisualRoot"]
 script = ExtResource("2_fox")
 
-[node name="MothRenderer" type="Node2D" parent="."]
+[node name="MothRenderer" type="Node2D" parent="VisualRoot"]
 visible = false
 script = ExtResource("3_moth")
 
-[node name="PangolinRenderer" type="Node2D" parent="."]
+[node name="PangolinRenderer" type="Node2D" parent="VisualRoot"]
 visible = false
 script = ExtResource("4_pangolin")
 
 [node name="AuraLight" type="PointLight2D" parent="."]
-position = Vector2(0, -18)
+position = Vector2(0, -22)
 color = Color(0.31, 1, 0.69, 1)
-energy = 1.25
+energy = 1.35
 texture = SubResource("GradientTexture2D_light")
-texture_scale = 1.45
+texture_scale = 1.65
+
+[node name="AnimPlayer" type="AnimationPlayer" parent="."]

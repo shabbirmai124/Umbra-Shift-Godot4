@@ -1,21 +1,23 @@
 extends Node2D
 class_name FoxRenderer
 
-## High-Detail Procedural Bioluminescent Fox Renderer (#4FFFB0 Mint Green)
-## 100% pure Godot 4 _draw() anatomy:
-## - Layered midnight-indigo pelage with slate-teal dorsal saddle & fur tufts
-## - 3-segment digitigrade legs (hip -> knee -> hock -> glowing mint paw) in 4-beat gallop
-## - 10-node Verlet/spring lush brush tail with glowing mint wisps & radiant tip
-## - Expressive head with sculpted muzzle, whiskers, dynamic velocity-pinned ears & glowing iris
-## - Bioluminescent shoulder/rib veins & moonlight rim highlights scaling with Flow
+## Painterly Organic Bioluminescent Spirit Fox Renderer
+## Smooth Bezier-curved vulpine anatomy with rich natural-fantasy coloration:
+## - Warm twilight-indigo & deep teal dorsal coat transitioning into luminous silver-ivory ruff & belly
+## - Smooth tapered organic limbs in true 4-beat rotary gallop (zero robotic facets or hard aura discs)
+## - Fluid 11-node Verlet feathered brush tail with layered indigo, ivory, and emerald-mint plume
+## - Expressive head with curved ears, soft fur cheek tufts, glowing emerald-mint iris & spirit runes
 
-const COLOR_MINT := Color(0.31, 1.0, 0.69, 1.0)
-const COLOR_MINT_BRIGHT := Color(0.84, 1.0, 0.94, 1.0)
-const COLOR_FUR_DARK := Color(0.039, 0.072, 0.136, 1.0)
-const COLOR_FUR_MID := Color(0.062, 0.118, 0.205, 1.0)
-const COLOR_FUR_FAR := Color(0.022, 0.043, 0.082, 1.0)
-const COLOR_FUR_BELLY := Color(0.028, 0.056, 0.104, 1.0)
-const COLOR_RIM := Color(0.72, 0.91, 0.98, 0.56)
+const COL_MINT: Color = Color(0.31, 1.0, 0.69, 1.0)
+const COL_MINT_SOFT: Color = Color(0.62, 1.0, 0.84, 0.85)
+const COL_MINT_CORE: Color = Color(0.92, 1.0, 0.97, 1.0)
+const COL_FUR_DEEP: Color = Color(0.11, 0.17, 0.29, 1.0)
+const COL_FUR_MID: Color = Color(0.19, 0.30, 0.45, 1.0)
+const COL_FUR_WARM: Color = Color(0.28, 0.44, 0.58, 1.0)
+const COL_FUR_FAR: Color = Color(0.08, 0.13, 0.22, 1.0)
+const COL_CREAM: Color = Color(0.76, 0.92, 0.90, 1.0)
+const COL_CREAM_SHADE: Color = Color(0.46, 0.66, 0.72, 1.0)
+const COL_RIM: Color = Color(0.84, 0.97, 1.0, 0.72)
 
 var gait_phase: float = 0.0
 var is_dashing: bool = false
@@ -28,11 +30,17 @@ var tail_nodes: PackedVector2Array = PackedVector2Array()
 var _time: float = 0.0
 
 func _ready() -> void:
-	tail_nodes.resize(10)
-	for i in range(10):
-		tail_nodes[i] = Vector2(-18.0 - float(i) * 7.6, -18.0)
+	_init_tail()
+
+func _init_tail() -> void:
+	tail_nodes.resize(11)
+	for i in range(11):
+		var frac: float = float(i) / 10.0
+		tail_nodes[i] = Vector2(-17.0 - float(i) * 6.5, -18.5 + sin(frac * PI) * -5.5)
 
 func sync_state(p_gait: float, p_dash: bool, p_air: bool, p_vy: float, p_speed_ratio: float, p_flow: int, p_morph: float, dt: float) -> void:
+	if tail_nodes.size() < 11:
+		_init_tail()
 	_time += dt
 	gait_phase = p_gait
 	is_dashing = p_dash
@@ -45,282 +53,323 @@ func sync_state(p_gait: float, p_dash: bool, p_air: bool, p_vy: float, p_speed_r
 	queue_redraw()
 
 func _update_tail_verlet(dt: float) -> void:
-	var anchor := Vector2(-18.0, -11.5 if is_dashing else -18.5)
-	tail_nodes[0] = anchor
-	var seg_len := 7.8
-	var follow := 1.0 - exp(-23.0 * maxf(dt, 0.001))
+	var anchor_y: float = -12.0 if is_dashing else -19.0 + sin(gait_phase * 2.0) * 1.4
+	tail_nodes[0] = Vector2(-18.0, anchor_y)
+	var seg_len: float = 6.6
+	var follow: float = 1.0 - exp(-20.0 * maxf(dt, 0.001))
 	for i in range(1, tail_nodes.size()):
-		var prev := tail_nodes[i - 1]
-		var wave := sin(gait_phase * 0.92 - float(i) * 0.54 + _time * 1.2) * (2.2 + float(i) * 0.58)
-		var lift := -1.3 if not is_dashing else 0.15
-		var target := Vector2(prev.x - seg_len, prev.y + lift + wave * 0.34 - vy * 0.0065)
-		var curr := tail_nodes[i].lerp(target, follow)
-		var delta := curr - prev
+		var prev: Vector2 = tail_nodes[i - 1]
+		var wave: float = sin(gait_phase * 0.9 - float(i) * 0.48 + _time * 2.6) * (2.4 + float(i) * 0.65)
+		var lift: float = -1.1 if not is_dashing else 0.1
+		var target: Vector2 = Vector2(prev.x - seg_len, prev.y + lift + wave * 0.34 - vy * 0.0065)
+		var curr: Vector2 = tail_nodes[i].lerp(target, follow)
+		var delta: Vector2 = curr - prev
 		if delta.length() > seg_len:
 			curr = prev + delta.normalized() * seg_len
 		tail_nodes[i] = curr
 
+func _quad_pts(p0: Vector2, p1: Vector2, p2: Vector2, steps: int) -> PackedVector2Array:
+	var out: PackedVector2Array = PackedVector2Array()
+	for i in range(steps + 1):
+		var t: float = float(i) / float(steps)
+		var u: float = 1.0 - t
+		out.append(u * u * p0 + 2.0 * u * t * p1 + t * t * p2)
+	return out
+
 func _draw() -> void:
-	var flow_boost := clampf(0.75 + float(flow_multiplier - 1) * 0.08 + (0.35 if is_dashing else 0.0), 0.75, 1.55)
+	if tail_nodes.size() < 11:
+		_init_tail()
+	var dash_boost: float = 0.35 if is_dashing else 0.0
+	var flow_boost: float = clampf(0.85 + float(flow_multiplier - 1) * 0.08 + dash_boost, 0.85, 1.55)
+
+	# Soft elliptical ground contact shadow when grounded
+	if not is_airborne:
+		_draw_soft_ellipse(Vector2(0.0, 1.5), 26.0 if is_dashing else 22.0, 3.6, Color(0.01, 0.02, 0.04, 0.46))
+
+	# Lush organic curved Verlet brush tail behind body
 	_draw_brush_tail(flow_boost)
 
-	var body_drop := 7.0 if is_dashing else 0.0
-	var bob := 0.0 if is_airborne else sin(gait_phase * 2.0) * 2.4
-	var pitch := 0.08 if is_dashing else (clampf(vy * 0.00052, -0.38, 0.36) if is_airborne else sin(gait_phase) * 0.055)
+	# Fluid 4-beat gallop kinematics: arched spine extension/gather + chest bob
+	var body_drop: float = 6.2 if is_dashing else 0.0
+	var gallop_wave: float = sin(gait_phase)
+	var bob: float = 0.0 if is_airborne else (absf(sin(gait_phase)) * -3.8)
+	var stretch_x: float = 1.13 if is_dashing else (1.0 + gallop_wave * 0.07)
+	var stretch_y: float = 0.87 if is_dashing else (1.0 - gallop_wave * 0.05)
+	var pitch: float = cos(gait_phase) * 0.08
+	if is_dashing:
+		pitch = 0.05
+	elif is_airborne:
+		pitch = clampf(vy * 0.00052, -0.34, 0.32)
 
-	draw_set_transform(Vector2(0.0, body_drop + bob), pitch, Vector2.ONE)
+	draw_set_transform(Vector2(0.0, body_drop + bob), pitch, Vector2(stretch_x, stretch_y))
 
-	# Soft bioluminescent ground aura reflection under chest when dashing / high flow
-	if is_dashing or flow_multiplier >= 3:
-		draw_circle(Vector2(4.0, -16.0), 26.0, Color(0.31, 1.0, 0.69, 0.08 * flow_boost))
+	# Far organic digitigrade legs
+	_draw_organic_leg(Vector2(-14.5, -16.2), gait_phase + PI * 0.36, false, true, flow_boost)
+	_draw_organic_leg(Vector2(11.5, -16.8), gait_phase + PI * 1.28, true, true, flow_boost)
 
-	# Far 3-segment digitigrade legs (4-beat rotary gallop offset)
-	_draw_digitigrade_leg(Vector2(-15.5, -15.5), gait_phase + PI * 0.34, false, true, flow_boost)
-	_draw_digitigrade_leg(Vector2(11.5, -16.5), gait_phase + PI * 1.26, true, true, flow_boost)
+	# Smooth Bezier-contoured vulpine torso (upper back + rounded haunch + lithe waist + deep chest)
+	var spine_flex: float = -3.4 if is_airborne else sin(gait_phase) * 3.0
+	var torso: PackedVector2Array = PackedVector2Array()
+	for p in _quad_pts(Vector2(-22.5, -15.5), Vector2(-10.0, -28.0 + spine_flex * 1.1), Vector2(5.0, -26.5 + spine_flex * 0.4), 6):
+		torso.append(p)
+	for p in _quad_pts(Vector2(5.0, -26.5 + spine_flex * 0.4), Vector2(18.5, -24.5), Vector2(22.5, -16.5), 5):
+		torso.append(p)
+	for p in _quad_pts(Vector2(22.5, -16.5), Vector2(19.0, -9.2), Vector2(7.0, -10.5), 5):
+		torso.append(p)
+	for p in _quad_pts(Vector2(7.0, -10.5), Vector2(-5.5, -13.5 + spine_flex * 0.35), Vector2(-16.5, -10.5), 5):
+		torso.append(p)
+	torso.append(Vector2(-22.0, -12.5))
+	draw_colored_polygon(torso, COL_FUR_DEEP)
 
-	# Lithe arched torso with tapered waist and muscular shoulder/haunch contours
-	var spine_flex := -2.6 if is_airborne else sin(gait_phase) * 2.3
-	var torso := PackedVector2Array([
-		Vector2(-22.5, -15.5),
-		Vector2(-18.0, -22.2 + spine_flex * 0.8),
-		Vector2(-9.0, -25.2 + spine_flex),
-		Vector2(2.5, -26.4 + spine_flex * 0.55),
-		Vector2(13.5, -24.2),
-		Vector2(21.5, -18.5),
-		Vector2(22.5, -13.8),
-		Vector2(14.5, -10.2),
-		Vector2(5.5, -10.8),
-		Vector2(-4.5, -12.6),
-		Vector2(-14.5, -10.6),
-		Vector2(-20.0, -11.5)
-	])
-	draw_colored_polygon(torso, COLOR_FUR_DARK)
+	# Upper moonlit mid-tone coat smoothly layered over back & shoulder
+	var coat: PackedVector2Array = PackedVector2Array()
+	for p in _quad_pts(Vector2(-20.0, -17.5), Vector2(-9.5, -27.2 + spine_flex), Vector2(5.0, -26.0 + spine_flex * 0.4), 6):
+		coat.append(p)
+	for p in _quad_pts(Vector2(5.0, -26.0 + spine_flex * 0.4), Vector2(16.0, -23.5), Vector2(19.0, -17.0), 4):
+		coat.append(p)
+	for p in _quad_pts(Vector2(19.0, -17.0), Vector2(4.0, -18.5), Vector2(-16.0, -16.5), 5):
+		coat.append(p)
+	draw_colored_polygon(coat, COL_FUR_MID)
 
-	# Upper dorsal slate-teal saddle coat for volume and depth
-	var saddle := PackedVector2Array([
-		Vector2(-18.5, -18.5),
-		Vector2(-10.0, -24.5 + spine_flex),
-		Vector2(2.0, -25.8 + spine_flex * 0.55),
-		Vector2(13.0, -23.6),
-		Vector2(16.5, -17.8),
-		Vector2(4.0, -18.2),
-		Vector2(-9.5, -17.5)
-	])
-	draw_colored_polygon(saddle, COLOR_FUR_MID)
+	# Warm moonlit shoulder-crest sheen
+	var sheen: PackedVector2Array = PackedVector2Array()
+	for p in _quad_pts(Vector2(-12.0, -23.5 + spine_flex * 0.8), Vector2(0.0, -26.8 + spine_flex * 0.6), Vector2(13.5, -23.2), 5):
+		sheen.append(p)
+	sheen.append(Vector2(11.0, -20.8))
+	sheen.append(Vector2(-9.5, -20.5))
+	draw_colored_polygon(sheen, COL_FUR_WARM)
 
-	# Shaded lower ribcage/belly silhouette
-	var belly := PackedVector2Array([
-		Vector2(-13.0, -11.5),
-		Vector2(-4.0, -12.8),
-		Vector2(6.0, -11.4),
-		Vector2(14.0, -10.8),
-		Vector2(10.0, -14.2),
-		Vector2(-4.5, -15.4)
-	])
-	draw_colored_polygon(belly, COLOR_FUR_BELLY)
+	# Soft silver-ivory chest ruff & belly fur (classic natural fox coloration!)
+	var chest_fur: PackedVector2Array = PackedVector2Array()
+	for p in _quad_pts(Vector2(10.0, -21.0), Vector2(23.0, -18.0), Vector2(25.2, -13.5), 4):
+		chest_fur.append(p)
+	chest_fur.append(Vector2(21.0, -11.5))
+	chest_fur.append(Vector2(22.4, -9.2))
+	chest_fur.append(Vector2(15.5, -9.0))
+	chest_fur.append(Vector2(16.2, -7.4))
+	for p in _quad_pts(Vector2(11.5, -9.5), Vector2(3.5, -10.8), Vector2(-6.5, -12.2), 4):
+		chest_fur.append(p)
+	chest_fur.append(Vector2(4.0, -15.5))
+	draw_colored_polygon(chest_fur, COL_CREAM)
 
-	# Layered chest/neck ruff fur tufts & rear haunch fur strokes
-	var chest_ruff := PackedVector2Array([
-		Vector2(12.0, -23.0), Vector2(21.5, -17.5), Vector2(24.0, -14.5),
-		Vector2(18.5, -12.2), Vector2(20.5, -10.0), Vector2(14.0, -9.8),
-		Vector2(15.5, -8.2), Vector2(9.0, -11.8)
-	])
-	draw_colored_polygon(chest_ruff, COLOR_FUR_MID)
-	draw_line(Vector2(14.5, -15.0), Vector2(20.5, -12.2), COLOR_RIM * Color(1, 1, 1, 0.45), 1.0, true)
-	draw_line(Vector2(-15.5, -18.0), Vector2(-21.0, -14.5), COLOR_RIM * Color(1, 1, 1, 0.35), 1.0, true)
-
-	# Moonlit rim-light tracing arched spine & haunch
+	# Soft shading fold inside chest ruff
 	draw_polyline(PackedVector2Array([
-		Vector2(-21.0, -16.8),
-		Vector2(-17.0, -22.2 + spine_flex * 0.8),
-		Vector2(-9.0, -25.2 + spine_flex),
-		Vector2(2.5, -26.4 + spine_flex * 0.55),
-		Vector2(13.5, -24.2),
-		Vector2(19.5, -20.0)
-	]), COLOR_RIM, 1.7, true)
+		Vector2(13.0, -16.0), Vector2(18.5, -13.8), Vector2(22.5, -13.2)
+	]), COL_CREAM_SHADE * Color(1, 1, 1, 0.7), 1.4, true)
 
-	# Bioluminescent shoulder-blade, flank & spine energy constellation veins
-	var vein_col := Color(COLOR_MINT.r, COLOR_MINT.g, COLOR_MINT.b, clampf(0.75 * flow_boost, 0.55, 1.0))
-	draw_polyline(PackedVector2Array([Vector2(4.0, -21.8), Vector2(10.5, -21.0), Vector2(16.2, -17.5)]), vein_col, 1.8, true)
-	draw_polyline(PackedVector2Array([Vector2(1.0, -19.2), Vector2(7.5, -18.5), Vector2(12.5, -15.4)]), vein_col * Color(1, 1, 1, 0.78), 1.3, true)
-	draw_polyline(PackedVector2Array([Vector2(-14.5, -20.0), Vector2(-9.5, -18.8), Vector2(-6.5, -15.5)]), vein_col * Color(1, 1, 1, 0.65), 1.2, true)
-	draw_circle(Vector2(10.5, -21.0), 1.8, COLOR_MINT_BRIGHT * Color(1, 1, 1, 0.85))
-	draw_circle(Vector2(-9.5, -18.8), 1.4, COLOR_MINT_BRIGHT * Color(1, 1, 1, 0.7))
+	# Crisp natural moonlight rim tracing the spine curve
+	var rim_curve: PackedVector2Array = _quad_pts(Vector2(-20.5, -17.8), Vector2(-8.5, -27.5 + spine_flex), Vector2(16.0, -23.8), 8)
+	draw_polyline(rim_curve, COL_RIM, 1.5, true)
 
-	# Expressive articulated head, pointed snout, cheek tufts, whiskers & dynamic pinned ears
-	_draw_head(flow_boost)
+	# Delicate organic spirit-mint markings flowing along shoulder & flank
+	var rune_col: Color = Color(COL_MINT.r, COL_MINT.g, COL_MINT.b, clampf(0.84 * flow_boost, 0.65, 1.0))
+	draw_polyline(_quad_pts(Vector2(1.5, -21.8), Vector2(9.5, -21.5), Vector2(15.5, -17.2), 5), rune_col, 1.8, true)
+	draw_polyline(_quad_pts(Vector2(-15.5, -19.8), Vector2(-10.0, -19.2), Vector2(-6.8, -15.2), 4), rune_col * Color(1, 1, 1, 0.75), 1.3, true)
+	draw_circle(Vector2(10.0, -20.8), 1.6, COL_MINT_CORE)
 
-	# Near 3-segment digitigrade legs
-	_draw_digitigrade_leg(Vector2(-16.0, -15.0), gait_phase, false, false, flow_boost)
-	_draw_digitigrade_leg(Vector2(12.2, -16.0), gait_phase + PI * 0.94, true, false, flow_boost)
+	# Expressive painterly vulpine head
+	_draw_head(flow_boost, -pitch * 0.42)
 
-	# Morph energy halo during 0.12s transition
-	if morph_ratio > 0.01:
-		draw_arc(Vector2(2.0, -17.0), 26.0 + (1.0 - morph_ratio) * 8.0, 0.0, TAU, 32, Color(0.31, 1.0, 0.69, morph_ratio * 0.88), 2.6, true)
+	# Near organic digitigrade legs
+	_draw_organic_leg(Vector2(-15.2, -15.0), gait_phase, false, false, flow_boost)
+	_draw_organic_leg(Vector2(12.2, -16.0), gait_phase + PI * 0.94, true, false, flow_boost)
+
+	# Subtle radial morph ring only during the 0.14s shift burst
+	if morph_ratio > 0.02:
+		draw_arc(Vector2(2.0, -18.0), 26.0 + (1.0 - morph_ratio) * 14.0, 0.0, TAU, 32, Color(0.31, 1.0, 0.69, morph_ratio * 0.85), 2.2, true)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-func _draw_head(flow_boost: float) -> void:
-	var ear_pin := 0.62 if is_dashing else clampf(speed_ratio * 0.42 + (0.15 if is_airborne else 0.0), 0.0, 0.55)
-	var head_pos := Vector2(17.0, -23.0)
+func _draw_head(flow_boost: float, counter_pitch: float) -> void:
+	var air_pin: float = 0.15 if is_airborne else 0.0
+	var ear_bounce: float = sin(gait_phase * 2.0 - 0.5) * 0.08 if not is_airborne else 0.0
+	var ear_pin: float = 0.58 if is_dashing else clampf(speed_ratio * 0.34 + air_pin + ear_bounce, 0.0, 0.54)
+	var hp: Vector2 = Vector2(17.5, -23.5 + sin(gait_phase + 0.4) * 1.1)
+	var md: float = counter_pitch * 3.6
 
-	# Back triangular ear
-	var back_tip := head_pos + Vector2(-2.0 - ear_pin * 11.5, -17.5 + ear_pin * 6.5)
-	var back_ear := PackedVector2Array([
-		head_pos + Vector2(-4.5, -3.0),
-		back_tip,
-		head_pos + Vector2(3.0, -4.5)
+	# Back ear (softly curved organic ear silhouette)
+	var b_tip: Vector2 = hp + Vector2(-1.5 - ear_pin * 10.5, -17.5 + ear_pin * 6.0)
+	var b_ear: PackedVector2Array = PackedVector2Array()
+	for p in _quad_pts(hp + Vector2(-4.8, -3.5), hp + Vector2(-5.2 - ear_pin * 4.0, -11.5), b_tip, 4):
+		b_ear.append(p)
+	for p in _quad_pts(b_tip, hp + Vector2(2.0 - ear_pin * 3.0, -10.5), hp + Vector2(3.2, -4.5), 4):
+		b_ear.append(p)
+	draw_colored_polygon(b_ear, COL_FUR_FAR)
+
+	# Smooth Bezier-sculpted vulpine head & slender pointed snout
+	var head_poly: PackedVector2Array = PackedVector2Array()
+	for p in _quad_pts(hp + Vector2(-7.0, -2.5), hp + Vector2(-1.5, -9.2), hp + Vector2(6.5, -6.8), 5):
+		head_poly.append(p)
+	for p in _quad_pts(hp + Vector2(6.5, -6.8), hp + Vector2(13.5, -3.4 + md * 0.5), hp + Vector2(22.2, 0.2 + md), 4):
+		head_poly.append(p)
+	for p in _quad_pts(hp + Vector2(22.2, 0.2 + md), hp + Vector2(19.0, 4.2 + md * 0.7), hp + Vector2(11.0, 4.6), 4):
+		head_poly.append(p)
+	head_poly.append(hp + Vector2(5.5, 5.2))
+	head_poly.append(hp + Vector2(1.2, 7.6))
+	head_poly.append(hp + Vector2(-2.6, 5.8))
+	head_poly.append(hp + Vector2(-6.5, 6.2))
+	draw_colored_polygon(head_poly, COL_FUR_MID)
+
+	# Soft luminous silver-ivory lower jaw & fluffy cheek ruff
+	var cheek: PackedVector2Array = PackedVector2Array([
+		hp + Vector2(-5.5, 1.8),
+		hp + Vector2(3.5, 0.4),
+		hp + Vector2(13.5, 2.2 + md * 0.4),
+		hp + Vector2(19.0, 2.6 + md * 0.8),
+		hp + Vector2(11.5, 4.8),
+		hp + Vector2(5.5, 5.4),
+		hp + Vector2(1.2, 7.6),
+		hp + Vector2(-2.8, 5.8),
+		hp + Vector2(-6.2, 5.8)
 	])
-	draw_colored_polygon(back_ear, COLOR_FUR_FAR)
-	draw_line(head_pos + Vector2(-0.5, -5.0), back_tip.lerp(head_pos + Vector2(-0.5, -5.0), 0.28), Color(0.31, 1.0, 0.69, 0.42), 1.1, true)
+	draw_colored_polygon(cheek, COL_CREAM)
 
-	# Sculpted vulpine skull, brow ridge, tapered muzzle & fluffy cheek tufts
-	var skull := PackedVector2Array([
-		head_pos + Vector2(-6.5, -4.0),
-		head_pos + Vector2(-1.5, -8.2),
-		head_pos + Vector2(5.0, -7.2),
-		head_pos + Vector2(10.5, -3.6),
-		head_pos + Vector2(21.0, 0.2),
-		head_pos + Vector2(19.5, 2.5),
-		head_pos + Vector2(13.5, 4.4),
-		head_pos + Vector2(6.5, 4.6),
-		head_pos + Vector2(1.5, 6.8),
-		head_pos + Vector2(-2.5, 5.4),
-		head_pos + Vector2(-6.5, 6.0),
-		head_pos + Vector2(-7.0, 1.8)
+	# Moonlight rim along forehead & bridge of muzzle
+	draw_polyline(_quad_pts(hp + Vector2(-1.2, -8.6), hp + Vector2(9.0, -5.8), hp + Vector2(21.4, 0.1 + md), 6), COL_RIM, 1.4, true)
+
+	# Dark nose tip & delicate soft whiskers
+	draw_circle(hp + Vector2(21.6, 0.7 + md), 1.5, Color(0.03, 0.05, 0.1, 1.0))
+	draw_line(hp + Vector2(14.0, 2.5), hp + Vector2(19.5, 5.2), Color(0.84, 0.98, 0.96, 0.45), 0.85, true)
+	draw_line(hp + Vector2(12.8, 3.6), hp + Vector2(17.8, 6.8), Color(0.84, 0.98, 0.96, 0.35), 0.85, true)
+
+	# Front ear with curved fur edge, dark tip, and glowing mint inner fluff
+	var f_tip: Vector2 = hp + Vector2(2.2 - ear_pin * 10.8, -19.8 + ear_pin * 6.4)
+	var f_ear: PackedVector2Array = PackedVector2Array()
+	for p in _quad_pts(hp + Vector2(-3.2, -2.5), hp + Vector2(-2.6 - ear_pin * 4.5, -11.5), f_tip, 4):
+		f_ear.append(p)
+	for p in _quad_pts(f_tip, hp + Vector2(5.8 - ear_pin * 3.0, -11.2), hp + Vector2(6.0, -3.2), 4):
+		f_ear.append(p)
+	draw_colored_polygon(f_ear, COL_FUR_WARM)
+	var inner_ear: PackedVector2Array = PackedVector2Array([
+		hp + Vector2(-0.8, -4.2), f_tip.lerp(hp + Vector2(1.4, -4.0), 0.28), hp + Vector2(3.8, -4.4)
 	])
-	draw_colored_polygon(skull, COLOR_FUR_DARK)
+	draw_colored_polygon(inner_ear, COL_CREAM_SHADE)
+	draw_line(hp + Vector2(1.4, -4.8), f_tip.lerp(hp + Vector2(1.4, -4.8), 0.24), COL_MINT, 1.5, true)
+	draw_polyline(_quad_pts(hp + Vector2(-2.8, -3.2), hp + Vector2(-2.2 - ear_pin * 4.2, -11.5), f_tip, 4), COL_RIM, 1.25, true)
 
-	# Lighter upper brow & cheek ruff plane
-	var cheek := PackedVector2Array([
-		head_pos + Vector2(-4.0, 1.5),
-		head_pos + Vector2(4.0, 0.5),
-		head_pos + Vector2(9.5, 3.8),
-		head_pos + Vector2(1.5, 6.2),
-		head_pos + Vector2(-4.5, 4.8)
+	# Expressive almond-shaped glowing emerald-mint eye
+	var eye_p: Vector2 = hp + Vector2(9.2, -1.6)
+	var eye_slit: PackedVector2Array = PackedVector2Array([
+		eye_p + Vector2(-3.1, -0.4),
+		eye_p + Vector2(0.4, -2.3),
+		eye_p + Vector2(3.3, 0.2),
+		eye_p + Vector2(0.2, 1.9)
 	])
-	draw_colored_polygon(cheek, COLOR_FUR_MID)
+	draw_colored_polygon(eye_slit, COL_MINT)
+	draw_circle(eye_p + Vector2(0.6, -0.35), 1.2, COL_MINT_CORE)
 
-	# Moonlight rim along brow & muzzle bridge
-	draw_polyline(PackedVector2Array([
-		head_pos + Vector2(-1.5, -8.2),
-		head_pos + Vector2(5.0, -7.2),
-		head_pos + Vector2(10.5, -3.6),
-		head_pos + Vector2(20.5, 0.0)
-	]), COLOR_RIM, 1.4, true)
-
-	# Dark glossy vulpine nose tip + glowing cheek whiskers
-	draw_circle(head_pos + Vector2(20.4, 0.8), 1.5, Color(0.015, 0.025, 0.05, 1.0))
-	draw_line(head_pos + Vector2(13.5, 2.2), head_pos + Vector2(18.5, 5.2), Color(0.62, 0.94, 0.88, 0.35), 0.8, true)
-	draw_line(head_pos + Vector2(12.2, 3.2), head_pos + Vector2(16.8, 6.6), Color(0.62, 0.94, 0.88, 0.28), 0.8, true)
-
-	# Front triangular ear with dark base, moonlight rim, and glowing mint inner vein
-	var front_tip := head_pos + Vector2(2.2 - ear_pin * 11.5, -19.5 + ear_pin * 6.8)
-	var front_ear := PackedVector2Array([
-		head_pos + Vector2(-3.0, -2.5),
-		front_tip,
-		head_pos + Vector2(5.8, -3.0)
-	])
-	draw_colored_polygon(front_ear, COLOR_FUR_MID)
-	draw_polyline(PackedVector2Array([head_pos + Vector2(-2.6, -3.0), front_tip]), COLOR_RIM, 1.2, true)
-	draw_line(head_pos + Vector2(1.4, -4.5), front_tip.lerp(head_pos + Vector2(1.4, -4.5), 0.22), COLOR_MINT, 1.6, true)
-
-	# Piercing layered glowing mint eye (outer aura -> emerald iris -> radiant pupil -> specular glint)
-	var eye_pos := head_pos + Vector2(8.8, -1.6)
-	draw_circle(eye_pos, 5.6 * clampf(flow_boost, 0.85, 1.25), Color(0.31, 1.0, 0.69, 0.26))
-	var eye_slit := PackedVector2Array([
-		eye_pos + Vector2(-2.8, -0.4),
-		eye_pos + Vector2(0.4, -2.1),
-		eye_pos + Vector2(3.1, 0.2),
-		eye_pos + Vector2(0.2, 1.8)
-	])
-	draw_colored_polygon(eye_slit, COLOR_MINT)
-	draw_circle(eye_pos + Vector2(0.4, -0.3), 1.05, COLOR_MINT_BRIGHT)
-
-func _draw_digitigrade_leg(hip: Vector2, phase: float, is_front: bool, is_far: bool, flow_boost: float) -> void:
-	var s := sin(phase)
-	var c := cos(phase)
+func _draw_organic_leg(hip: Vector2, phase: float, is_front: bool, is_far: bool, flow_boost: float) -> void:
+	var s: float = sin(phase)
+	var c: float = cos(phase)
 	var thigh_a: float
 	var knee_a: float
 	var hock_a: float
 	if is_dashing:
 		thigh_a = -1.22 if is_front else 1.24
-		knee_a = 0.48 if is_front else -0.38
-		hock_a = -0.22 if is_front else 0.26
+		knee_a = 0.45 if is_front else -0.36
+		hock_a = -0.20 if is_front else 0.24
 	elif is_airborne:
-		var leap_t := clampf(vy / 650.0, -1.0, 1.0)
-		thigh_a = (-0.98 + leap_t * 0.45) if is_front else (0.98 - leap_t * 0.35)
-		knee_a = 0.68 if is_front else -0.58
-		hock_a = -0.25 if is_front else 0.35
+		var leap_t: float = clampf(vy / 650.0, -1.0, 1.0)
+		thigh_a = (-1.0 + leap_t * 0.42) if is_front else (1.0 - leap_t * 0.34)
+		knee_a = 0.70 if is_front else -0.60
+		hock_a = -0.24 if is_front else 0.34
 	else:
-		thigh_a = s * (0.76 if is_front else 0.84) + (-0.16 if is_front else 0.18)
-		knee_a = (0.48 if is_front else -0.62) + maxf(0.0, c) * (0.44 if is_front else -0.48)
-		hock_a = (-0.24 if is_front else 0.42) + sin(phase + 0.6) * 0.18
+		thigh_a = s * (0.80 if is_front else 0.86) + (-0.15 if is_front else 0.20)
+		knee_a = (0.48 if is_front else -0.64) + maxf(0.0, c) * (0.46 if is_front else -0.50)
+		hock_a = (-0.24 if is_front else 0.44) + sin(phase + 0.6) * 0.20
 
-	var l1 := 8.8 if is_front else 9.8
-	var l2 := 7.6 if is_front else 8.4
-	var l3 := 5.2 if is_front else 5.6
-	var knee := hip + Vector2(sin(thigh_a), cos(thigh_a)) * l1
-	var hock := knee + Vector2(sin(thigh_a + knee_a), cos(thigh_a + knee_a)) * l2
-	var paw := hock + Vector2(sin(thigh_a + knee_a + hock_a), cos(thigh_a + knee_a + hock_a)) * l3
+	var l1: float = 9.0 if is_front else 10.2
+	var l2: float = 7.8 if is_front else 8.6
+	var l3: float = 5.4 if is_front else 5.8
+	var knee: Vector2 = hip + Vector2(sin(thigh_a), cos(thigh_a)) * l1
+	var hock: Vector2 = knee + Vector2(sin(thigh_a + knee_a), cos(thigh_a + knee_a)) * l2
+	var paw: Vector2 = hock + Vector2(sin(thigh_a + knee_a + hock_a), cos(thigh_a + knee_a + hock_a)) * l3
 
-	var leg_col := COLOR_FUR_FAR if is_far else COLOR_FUR_DARK
-	var hl_col := Color(COLOR_RIM.r, COLOR_RIM.g, COLOR_RIM.b, 0.18 if is_far else 0.38)
-	draw_line(hip, knee, leg_col, 4.8 if is_front else 5.8, true)
-	draw_line(knee, hock, leg_col, 3.4 if is_front else 3.8, true)
-	draw_line(hock, paw, leg_col, 2.5, true)
+	var upper_col: Color = COL_FUR_FAR if is_far else COL_FUR_MID
+	var lower_col: Color = COL_FUR_FAR if is_far else COL_FUR_DEEP
+	_draw_capsule_seg(hip, knee, 4.4 if is_front else 5.4, 2.7 if is_front else 3.2, upper_col)
+	_draw_capsule_seg(knee, hock, 2.5 if is_front else 2.9, 1.7, lower_col)
+	_draw_capsule_seg(hock, paw, 1.7, 1.3, lower_col)
+
+	# Glowing spirit-mint paw socks
+	var paw_a: float = 0.56 if is_far else clampf(0.95 * flow_boost, 0.8, 1.0)
+	_draw_capsule_seg(hock.lerp(paw, 0.42), paw, 1.8, 1.5, Color(0.31, 1.0, 0.69, paw_a * 0.85))
+	var paw_poly: PackedVector2Array = PackedVector2Array([
+		paw + Vector2(-2.2, 0.5), paw + Vector2(0.8, -1.6), paw + Vector2(4.5, 0.4), paw + Vector2(1.2, 1.8)
+	])
+	draw_colored_polygon(paw_poly, Color(0.31, 1.0, 0.69, paw_a))
 	if not is_far:
-		draw_line(hip + Vector2(1.0, 0.0), knee + Vector2(1.0, 0.0), hl_col, 1.1, true)
+		draw_circle(paw + Vector2(1.5, 0.0), 1.2, COL_MINT_CORE)
 
-	# Glowing mint bioluminescent paw sock & pad
-	var paw_alpha := 0.52 if is_far else clampf(0.92 * flow_boost, 0.75, 1.0)
-	draw_line(hock.lerp(paw, 0.45), paw, Color(0.31, 1.0, 0.69, paw_alpha * 0.75), 2.4, true)
-	draw_circle(paw + Vector2(1.3, 0.0), 2.6, Color(0.31, 1.0, 0.69, paw_alpha))
-	if not is_far:
-		draw_circle(paw + Vector2(1.5, 0.0), 1.2, COLOR_MINT_BRIGHT)
+func _draw_capsule_seg(a: Vector2, b: Vector2, r0: float, r1: float, col: Color) -> void:
+	var diff: Vector2 = b - a
+	if diff.length_squared() < 0.001:
+		return
+	var dir: Vector2 = diff.normalized()
+	var nrm: Vector2 = Vector2(-dir.y, dir.x)
+	draw_colored_polygon(PackedVector2Array([a + nrm * r0, b + nrm * r1, b - nrm * r1, a - nrm * r0]), col)
+	draw_circle(a, r0 * 0.94, col)
+	draw_circle(b, r1 * 0.94, col)
+
+func _draw_soft_ellipse(center: Vector2, rx: float, ry: float, col: Color) -> void:
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i in range(16):
+		var ang: float = (float(i) / 16.0) * TAU
+		pts.append(center + Vector2(cos(ang) * rx, sin(ang) * ry))
+	draw_colored_polygon(pts, col)
 
 func _draw_brush_tail(flow_boost: float) -> void:
-	var count := tail_nodes.size()
-	if count < 4:
-		return
-	var widths := [4.2, 7.2, 10.4, 12.2, 12.4, 11.0, 9.0, 6.4, 3.6, 1.2]
+	var count: int = tail_nodes.size()
+	var widths: PackedFloat32Array = PackedFloat32Array([3.8, 6.6, 9.4, 11.4, 11.8, 11.0, 9.2, 6.8, 4.4, 2.2, 0.6])
 	var upper: Array[Vector2] = []
 	var lower: Array[Vector2] = []
 	for i in range(count):
-		var curr := tail_nodes[i]
-		var prev := tail_nodes[maxi(0, i - 1)]
-		var nxt := tail_nodes[mini(count - 1, i + 1)]
-		var dir := (nxt - prev).normalized()
-		var nrm := Vector2(-dir.y, dir.x)
-		var w: float = widths[mini(widths.size() - 1, i)]
+		var curr: Vector2 = tail_nodes[i]
+		var prev: Vector2 = tail_nodes[maxi(0, i - 1)]
+		var nxt: Vector2 = tail_nodes[mini(count - 1, i + 1)]
+		var diff: Vector2 = nxt - prev
+		var dir: Vector2 = diff.normalized() if diff.length_squared() > 0.001 else Vector2(-1.0, 0.0)
+		var nrm: Vector2 = Vector2(-dir.y, dir.x)
+		var w: float = widths[i]
 		upper.append(curr + nrm * w)
 		lower.append(curr - nrm * w)
 
-	var poly := PackedVector2Array()
+	var poly: PackedVector2Array = PackedVector2Array()
 	for p in upper:
 		poly.append(p)
 	for i in range(count - 1, -1, -1):
 		poly.append(lower[i])
-	draw_colored_polygon(poly, COLOR_FUR_DARK)
+	draw_colored_polygon(poly, COL_FUR_MID)
 
-	# Moonlight rim along upper edge of brush tail
-	var upper_edge := PackedVector2Array()
-	for i in range(count - 2):
-		upper_edge.append(upper[i])
-	draw_polyline(upper_edge, COLOR_RIM * Color(1, 1, 1, 0.65), 1.3, true)
+	# Shaded underside volume
+	var under: PackedVector2Array = PackedVector2Array()
+	for i in range(count):
+		under.append(tail_nodes[i])
+	for i in range(count - 1, -1, -1):
+		under.append(lower[i])
+	draw_colored_polygon(under, COL_FUR_DEEP)
 
-	# Feathery glowing mint energy plume covering the outer third of the tail
-	var plume := PackedVector2Array()
+	# Soft silver-ivory outer plume (classic fox brush tip!)
+	var tip_dir: Vector2 = (tail_nodes[count - 1] - tail_nodes[count - 2]).normalized()
+	var ivory_plume: PackedVector2Array = PackedVector2Array()
+	for i in range(count - 5, count):
+		ivory_plume.append(upper[i])
+	ivory_plume.append(tail_nodes[count - 1] + tip_dir * 6.5)
+	for i in range(count - 1, count - 6, -1):
+		ivory_plume.append(lower[i])
+	draw_colored_polygon(ivory_plume, COL_CREAM)
+
+	# Flowing emerald-mint spirit energy ribbons woven into tail tip
+	var mint_plume: PackedVector2Array = PackedVector2Array()
 	for i in range(count - 4, count):
-		plume.append(upper[i])
+		mint_plume.append(upper[i].lerp(tail_nodes[i], 0.35))
+	mint_plume.append(tail_nodes[count - 1] + tip_dir * 7.5)
 	for i in range(count - 1, count - 5, -1):
-		plume.append(lower[i])
-	draw_colored_polygon(plume, Color(0.18, 0.72, 0.56, 0.45 * clampf(flow_boost, 0.8, 1.2)))
+		mint_plume.append(lower[i].lerp(tail_nodes[i], 0.35))
+	draw_colored_polygon(mint_plume, Color(0.31, 1.0, 0.69, 0.72 * clampf(flow_boost, 0.85, 1.2)))
 
-	# Radiant bioluminescent tail tip & trailing spine wisp
-	var tip := tail_nodes[count - 1]
-	var mid := tail_nodes[count - 4]
-	draw_circle(tip, 15.0 * clampf(flow_boost, 0.85, 1.3), Color(0.31, 1.0, 0.69, 0.24))
-	draw_circle(tip, 6.2, COLOR_MINT)
-	draw_circle(tip, 2.8, COLOR_MINT_BRIGHT)
-	draw_polyline(PackedVector2Array([mid, tail_nodes[count - 3], tail_nodes[count - 2], tip]), Color(0.55, 1.0, 0.84, 0.9), 2.8, true)
+	var upper_edge: PackedVector2Array = PackedVector2Array()
+	for i in range(count - 1):
+		upper_edge.append(upper[i])
+	draw_polyline(upper_edge, COL_RIM * Color(1, 1, 1, 0.68), 1.4, true)
+	draw_polyline(PackedVector2Array([tail_nodes[count - 5], tail_nodes[count - 3], tail_nodes[count - 1] + tip_dir * 5.0]), COL_MINT_CORE * Color(1, 1, 1, 0.85), 1.8, true)
